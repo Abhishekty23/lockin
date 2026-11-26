@@ -164,7 +164,7 @@ export default function HabitsBoard({ initial, today, soundOn }: { initial: Habi
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 24 }}
-            className={`fixed bottom-24 md:bottom-6 left-1/2 z-[60] -translate-x-1/2 rounded-2xl bg-surface-strong px-5 py-3 text-sm font-semibold shadow-2xl ring-1 ${toast.tone === "error" ? "text-rose ring-rose/30" : "ring-mint/40"}`}
+            className={`fixed bottom-24 lg:bottom-6 left-1/2 z-[60] -translate-x-1/2 rounded-2xl bg-surface-strong px-5 py-3 text-sm font-semibold shadow-2xl ring-1 ${toast.tone === "error" ? "text-rose ring-rose/30" : "ring-mint/40"}`}
           >
             {toast.text}
           </motion.div>
