@@ -51,6 +51,7 @@ export default async function Page({
         avatar={profile.avatar}
         email={user.email ?? ""}
         alerts={alertSetupFrom(profile)}
+        isAdmin={profile.role === "admin"}
       />
       <JournalBoard
         today={today}
