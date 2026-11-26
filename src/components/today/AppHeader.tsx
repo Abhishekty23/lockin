@@ -23,6 +23,7 @@ import Logo from "@/components/ui/Logo";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import AnnouncementBar from "@/components/ui/AnnouncementBar";
 import FeedbackDialog from "@/components/ui/FeedbackDialog";
+import InstallButton from "@/components/ui/InstallButton";
 import { signOut } from "@/app/auth/actions";
 
 const NAV: { href: string; label: string; icon: LucideIcon; soon?: boolean }[] =
@@ -143,6 +144,10 @@ export default function AppHeader({
                   >
                     <MessageSquarePlus size={16} /> Send feedback
                   </button>
+                  <InstallButton
+                    onDone={() => setOpen(false)}
+                    className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-mint transition hover:bg-mint/10"
+                  />
                   {isAdmin && (
                     <Link
                       href="/admin"
