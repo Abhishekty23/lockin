@@ -175,6 +175,7 @@ export default function AlertCenter({ setup }: { setup: AlertSetup }) {
 
   async function act(kind: AlertKind) {
     if (kind === "water") {
+      setResult("Logging your glass…");
       const res = await waterFromAlert();
       if (res.ok) {
         window.dispatchEvent(new CustomEvent("lockin:water", { detail: res.water }));
