@@ -72,6 +72,17 @@ export default function TodayDashboard({ firstName, avatar, greeting, dateLabel,
     prevScore.current = score;
   }, [score, soundOn]);
 
+  // A water alert logged a glass somewhere else on the page
+  useEffect(() => {
+    const onWater = (e: Event) => {
+      const water = (e as CustomEvent<number>).detail;
+      setLog((l) => ({ ...l, water }));
+      saved.current = { ...saved.current, water };
+    };
+    window.addEventListener("lockin:water", onWater);
+    return () => window.removeEventListener("lockin:water", onWater);
+  }, []);
+
   useEffect(() => {
     if (!toast) return;
     const t = setTimeout(() => setToast(null), 3500);
