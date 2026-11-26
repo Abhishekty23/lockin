@@ -40,6 +40,7 @@ export type Profile = {
   focus_goal_minutes: number;
   water_goal: number;
   move_goal_minutes: number;
+  steps_goal: number;
   reminders: Reminders;
   sound_on: boolean;
   timezone: string;
