@@ -117,3 +117,6 @@ export const sounds = {
 };
 
 export type SoundName = keyof typeof sounds;
+
+/** Shared audio context (used by the ambient sounds in Lock In mode). */
+export const getAudio = audio;
