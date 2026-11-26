@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Check, CloudRain, Coffee, Headphones, Trees } from "lucide-react";
 import { sounds } from "@/lib/sounds";
+import Tilt from "@/components/ui/Tilt";
 
 /* ---------- Lock in mode preview: live countdown + breathing orb ---------- */
 function LockInMode() {
@@ -12,11 +13,16 @@ function LockInMode() {
   const [distractions, setDistractions] = useState(0);
 
   useEffect(() => {
-    const id = setInterval(() => setSecs((s) => (s > 0 ? s - 1 : 50 * 60)), 1000);
+    const id = setInterval(
+      () => setSecs((s) => (s > 0 ? s - 1 : 50 * 60)),
+      1000,
+    );
     return () => clearInterval(id);
   }, []);
 
-  const mm = Math.floor(secs / 60).toString().padStart(2, "0");
+  const mm = Math.floor(secs / 60)
+    .toString()
+    .padStart(2, "0");
   const ss = (secs % 60).toString().padStart(2, "0");
   const ambients = [
     { name: "Rain", icon: CloudRain },
@@ -30,14 +36,19 @@ function LockInMode() {
       <div className="pointer-events-none absolute left-1/2 top-[46%] h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#8f80ff]/30 blur-3xl animate-breathe" />
       <div className="relative">
         <p className="font-display text-2xl font-bold">Lock in mode</p>
-        <p className="mt-1 max-w-xs text-sm text-[#9aa3d6]">A calm full-screen timer for deep work, with ambient sound and nothing else.</p>
+        <p className="mt-1 max-w-xs text-sm text-[#9aa3d6]">
+          A calm full-screen timer for deep work, with ambient sound and nothing
+          else.
+        </p>
       </div>
       <div className="relative my-auto py-8 text-center">
         <p className="text-sm text-[#9aa3d6]">Coding, React hooks</p>
         <p className="mt-2 font-display text-7xl font-extrabold tabular-nums tracking-tight sm:text-8xl">
           {mm}:{ss}
         </p>
-        <p className="mt-2 text-sm text-[#9aa3d6]">Breathe in as the glow grows, out as it fades</p>
+        <p className="mt-2 text-sm text-[#9aa3d6]">
+          Breathe in as the glow grows, out as it fades
+        </p>
       </div>
       <div className="relative flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-2">
@@ -48,7 +59,9 @@ function LockInMode() {
               onClick={() => setAmbient(a.name)}
               aria-pressed={ambient === a.name}
               className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-sm transition ${
-                ambient === a.name ? "bg-white text-[#0a0d26]" : "bg-white/8 text-[#cfd4ff] hover:bg-white/15"
+                ambient === a.name
+                  ? "bg-white text-[#0a0d26]"
+                  : "bg-white/8 text-[#cfd4ff] hover:bg-white/15"
               }`}
             >
               <a.icon size={14} /> {a.name}
@@ -100,7 +113,9 @@ function WaterGlass() {
             {glasses}
             <span className="text-xl text-muted">/8</span>
           </p>
-          <p className="text-sm text-muted">{full ? "Goal hit 💧" : `${8 - glasses} to go`}</p>
+          <p className="text-sm text-muted">
+            {full ? "Goal hit 💧" : `${8 - glasses} to go`}
+          </p>
         </div>
       </div>
     </div>
@@ -117,7 +132,9 @@ function StreakMini() {
           🔥
         </span>
         <div>
-          <p className="font-display text-3xl font-extrabold tabular-nums">23 days</p>
+          <p className="font-display text-3xl font-extrabold tabular-nums">
+            23 days
+          </p>
           <p className="text-sm text-muted">locked in streak</p>
         </div>
       </div>
@@ -139,9 +156,17 @@ function Heatmap() {
   const level = (i: number) => {
     const x = Math.sin(i * 12.9898) * 43758.5453;
     const r = x - Math.floor(x);
-    return i % 7 === 6 && r < 0.5 ? 0 : Math.min(4, Math.floor(r * 5 + (i / 105) * 1.5));
+    return i % 7 === 6 && r < 0.5
+      ? 0
+      : Math.min(4, Math.floor(r * 5 + (i / 105) * 1.5));
   };
-  const shades = ["var(--line)", "color-mix(in oklab, var(--violet) 30%, transparent)", "color-mix(in oklab, var(--violet) 55%, transparent)", "color-mix(in oklab, var(--violet) 80%, transparent)", "var(--violet)"];
+  const shades = [
+    "var(--line)",
+    "color-mix(in oklab, var(--violet) 30%, transparent)",
+    "color-mix(in oklab, var(--violet) 55%, transparent)",
+    "color-mix(in oklab, var(--violet) 80%, transparent)",
+    "var(--violet)",
+  ];
   return (
     <div className="glass h-full rounded-3xl p-6">
       <div className="flex items-baseline justify-between">
@@ -150,10 +175,17 @@ function Heatmap() {
       </div>
       <div className="mt-5 grid grid-flow-col grid-rows-7 gap-1.5">
         {Array.from({ length: 105 }, (_, i) => (
-          <div key={i} className="aspect-square rounded-[4px]" style={{ background: shades[level(i)] }} title={`Day ${i + 1}`} />
+          <div
+            key={i}
+            className="aspect-square rounded-[4px]"
+            style={{ background: shades[level(i)] }}
+            title={`Day ${i + 1}`}
+          />
         ))}
       </div>
-      <p className="mt-4 text-sm text-muted">Darker squares are days you focused longer.</p>
+      <p className="mt-4 text-sm text-muted">
+        Darker squares are days you focused longer.
+      </p>
     </div>
   );
 }
@@ -174,9 +206,16 @@ function Insights() {
     <div className="glass h-full rounded-3xl p-6">
       <div className="flex items-baseline justify-between">
         <p className="font-display text-lg font-bold">Focus this week</p>
-        <p className="text-sm tabular-nums text-muted">{active === null ? "41h 12m total" : `${data[active].d}: ${data[active].h}h`}</p>
+        <p className="text-sm tabular-nums text-muted">
+          {active === null
+            ? "41h 12m total"
+            : `${data[active].d}: ${data[active].h}h`}
+        </p>
       </div>
-      <div className="mt-6 flex h-36 items-end gap-3" onMouseLeave={() => setActive(null)}>
+      <div
+        className="mt-6 flex h-36 items-end gap-3"
+        onMouseLeave={() => setActive(null)}
+      >
         {data.map((b, i) => (
           <button
             key={b.d}
@@ -190,22 +229,35 @@ function Insights() {
               initial={{ height: 0 }}
               whileInView={{ height: `${(b.h / 8.2) * 100}%` }}
               viewport={{ once: true }}
-              transition={{ duration: 0.8, delay: i * 0.06, ease: [0.22, 1, 0.36, 1] }}
+              transition={{
+                duration: 0.8,
+                delay: i * 0.06,
+                ease: [0.22, 1, 0.36, 1],
+              }}
               className="w-full rounded-t-lg rounded-b-sm"
-              style={{ background: active === i ? "var(--amber)" : "var(--violet)" }}
+              style={{
+                background: active === i ? "var(--amber)" : "var(--violet)",
+              }}
             />
             <span className="text-xs text-muted">{b.d}</span>
           </button>
         ))}
       </div>
-      <p className="mt-4 text-sm text-muted">You focus best between 9 and 11 am.</p>
+      <p className="mt-4 text-sm text-muted">
+        You focus best between 9 and 11 am.
+      </p>
     </div>
   );
 }
 
 /* ---------- Habits ---------- */
 function Habits() {
-  const [done, setDone] = useState<Record<string, boolean>>({ Meditate: true, "Read 20 pages": false, "No sugar": true, "Walk 5 km": false });
+  const [done, setDone] = useState<Record<string, boolean>>({
+    Meditate: true,
+    "Read 20 pages": false,
+    "No sugar": true,
+    "Walk 5 km": false,
+  });
   return (
     <div className="glass h-full rounded-3xl p-6">
       <p className="font-display text-lg font-bold">Habits</p>
@@ -225,13 +277,19 @@ function Habits() {
               >
                 <AnimatePresence>
                   {ok && (
-                    <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}>
+                    <motion.span
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      exit={{ scale: 0 }}
+                    >
                       <Check size={14} strokeWidth={3.5} />
                     </motion.span>
                   )}
                 </AnimatePresence>
               </span>
-              <span className={ok ? "text-muted line-through" : ""}>{name}</span>
+              <span className={ok ? "text-muted line-through" : ""}>
+                {name}
+              </span>
             </button>
           </li>
         ))}
@@ -256,7 +314,9 @@ function Friends() {
           <li key={p.name} className="flex items-center gap-3">
             <span className="w-4 text-sm tabular-nums text-muted">{i + 1}</span>
             <span className="text-lg">{p.emoji}</span>
-            <span className={`flex-1 ${p.name === "You" ? "font-bold" : ""}`}>{p.name}</span>
+            <span className={`flex-1 ${p.name === "You" ? "font-bold" : ""}`}>
+              {p.name}
+            </span>
             <span className="tabular-nums text-muted">{p.h}h</span>
           </li>
         ))}
@@ -270,35 +330,37 @@ export default function Features() {
     <section id="features" className="scroll-mt-24 px-4 py-28">
       <div className="mx-auto max-w-6xl">
         <div className="max-w-2xl">
-          <h2 className="font-display text-4xl font-bold tracking-tight sm:text-5xl">Everything about your day, in one place</h2>
+          <h2 className="font-display text-4xl font-bold tracking-tight sm:text-5xl">
+            Everything about your day, in one place
+          </h2>
           <p className="mt-5 text-lg leading-relaxed text-muted">
-            Skills, exams, fitness, reading, work: pick what you&apos;re working on. These are real pieces of the app, so go ahead
-            and tap them.
+            Skills, exams, fitness, reading, work: pick what you&apos;re working
+            on. These are real pieces of the app, so go ahead and tap them.
           </p>
         </div>
 
         <div className="mt-14 grid gap-4 md:grid-cols-6">
-          <div className="md:col-span-4 md:row-span-2">
+          <Tilt className="md:col-span-4 md:row-span-2 rounded-3xl" max={3}>
             <LockInMode />
-          </div>
-          <div className="md:col-span-2">
+          </Tilt>
+          <Tilt className="md:col-span-2 rounded-3xl" max={7}>
             <WaterGlass />
-          </div>
-          <div className="md:col-span-2">
+          </Tilt>
+          <Tilt className="md:col-span-2 rounded-3xl" max={7}>
             <StreakMini />
-          </div>
-          <div className="md:col-span-3">
+          </Tilt>
+          <Tilt className="md:col-span-3 rounded-3xl" max={7}>
             <Heatmap />
-          </div>
-          <div className="md:col-span-3">
+          </Tilt>
+          <Tilt className="md:col-span-3 rounded-3xl" max={7}>
             <Insights />
-          </div>
-          <div className="md:col-span-3">
+          </Tilt>
+          <Tilt className="md:col-span-3 rounded-3xl" max={7}>
             <Habits />
-          </div>
-          <div className="md:col-span-3">
+          </Tilt>
+          <Tilt className="md:col-span-3 rounded-3xl" max={7}>
             <Friends />
-          </div>
+          </Tilt>
         </div>
       </div>
     </section>

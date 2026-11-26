@@ -74,7 +74,7 @@ export function CTA() {
         <h2 className="mx-auto mt-8 max-w-2xl font-display text-4xl font-bold tracking-tight sm:text-6xl">Ready to lock in?</h2>
         <p className="mx-auto mt-5 max-w-md text-lg text-muted">Set up your day in under a minute. Your first streak starts today.</p>
         <div className="mt-9 flex flex-wrap justify-center gap-3">
-          <Link href="/signup" className="rounded-full bg-ink px-8 py-4 font-semibold text-bg transition hover:-translate-y-0.5">
+          <Link href="/signup" className="cta-glow rounded-full bg-ink px-8 py-4 font-semibold text-bg transition hover:-translate-y-0.5">
             Start free
           </Link>
           <Link href="/demo" className="glass rounded-full px-8 py-4 font-semibold transition hover:-translate-y-0.5">
