@@ -54,7 +54,7 @@ export default async function Page() {
 
   return (
     <div className="sky min-h-screen">
-      <AppHeader name={profile.full_name ?? "You"} avatar={profile.avatar} email={user.email ?? ""} alerts={alertSetupFrom(profile)} />
+      <AppHeader name={profile.full_name ?? "You"} avatar={profile.avatar} email={user.email ?? ""} alerts={alertSetupFrom(profile)} isAdmin={profile.role === "admin"} />
       <TodayDashboard
         firstName={(profile.full_name ?? "there").split(" ")[0]}
         avatar={profile.avatar}
