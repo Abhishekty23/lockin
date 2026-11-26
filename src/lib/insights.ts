@@ -166,7 +166,7 @@ function measure(data: InsightData, range: Range) {
     start,
     today,
     days,
-    hasData: days.some((d) => d.logged) || sessions.length > 0,
+    hasData: active.length > 0 || sessions.length > 0,
     score: { avg: avgScore, prev: prevAvg, delta: avgScore - prevAvg, locked, activeDays: active.length, best: best && best.score > 0 ? best : null },
     focus: {
       total: focusTotal,
