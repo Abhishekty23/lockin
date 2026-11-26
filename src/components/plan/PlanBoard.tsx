@@ -1,5 +1,7 @@
 "use client";
 
+import { safe } from "@/lib/net";
+
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { CalendarClock, ChevronDown, Loader2, Plus } from "lucide-react";
@@ -87,13 +89,13 @@ export default function PlanBoard({
   const done = sorted.filter((t) => t.done_at);
 
   async function add(i: A.TaskInput) {
-    const res = await A.addTask(i);
+    const res = await safe(A.addTask(i));
     if (!res.ok) return flash(res.error, "error"), false;
     setTasks((ts) => [...ts, res.task]);
     return true;
   }
   async function save(t: Task, i: A.TaskInput) {
-    const res = await A.updateTask(t.id, i);
+    const res = await safe(A.updateTask(t.id, i));
     if (!res.ok) return flash(res.error, "error"), false;
     setTasks((ts) => ts.map((x) => (x.id === t.id ? res.task : x)));
     return true;
@@ -102,7 +104,7 @@ export default function PlanBoard({
     const doneNow = !t.done_at;
     setTasks((ts) => ts.map((x) => (x.id === t.id ? { ...x, done_at: doneNow ? new Date().toISOString() : null } : x)));
     if (doneNow && soundOn) sounds.done();
-    const res = await A.toggleTask(t.id, doneNow);
+    const res = await safe(A.toggleTask(t.id, doneNow));
     if (!res.ok) {
       setTasks((ts) => ts.map((x) => (x.id === t.id ? t : x)));
       flash(res.error, "error");
@@ -113,14 +115,14 @@ export default function PlanBoard({
   }
   async function remove(t: Task) {
     setTasks((ts) => ts.filter((x) => x.id !== t.id));
-    const res = await A.deleteTask(t.id);
+    const res = await safe(A.deleteTask(t.id));
     if (!res.ok) {
       setTasks((ts) => [...ts, t]);
       flash(res.error, "error");
     } else flash("Task deleted");
   }
   async function rollOver() {
-    const res = await A.rollOverTasks();
+    const res = await safe(A.rollOverTasks());
     if (!res.ok) return flash(res.error, "error");
     setTasks((ts) => ts.map((x) => (!x.done_at && x.due && x.due < today ? { ...x, due: today } : x)));
     flash(`Moved ${res.count} task${res.count === 1 ? "" : "s"} to today`);
@@ -199,24 +201,24 @@ export default function PlanBoard({
                   sleep={sleep}
                   timezone={timezone}
                   onAdd={async (b) => {
-                    const res = await A.addBlock(b);
+                    const res = await safe(A.addBlock(b));
                     if (!res.ok) return res.error;
                     setBlocks((bs) => [...bs, res.block]);
                     return null;
                   }}
                   onUpdate={async (id, b) => {
-                    const res = await A.updateBlock(id, b);
+                    const res = await safe(A.updateBlock(id, b));
                     if (!res.ok) return res.error;
                     setBlocks((bs) => bs.map((x) => (x.id === id ? res.block : x)));
                     return null;
                   }}
                   onDelete={async (id) => {
-                    const res = await A.deleteBlock(id);
+                    const res = await safe(A.deleteBlock(id));
                     if (!res.ok) return flash(res.error, "error");
                     setBlocks((bs) => bs.filter((x) => x.id !== id));
                   }}
                   onCopy={async () => {
-                    const res = await A.copyLastTimetable();
+                    const res = await safe(A.copyLastTimetable());
                     if (!res.ok) return flash(res.error, "error");
                     setBlocks(res.blocks);
                     flash(`Copied ${res.blocks.length} blocks`);
@@ -287,24 +289,24 @@ export default function PlanBoard({
                     onToggleMilestone={async (id, d) => {
                       patchGoal(g.id, (x) => ({ ...x, milestones: x.milestones.map((m) => (m.id === id ? { ...m, done_at: d ? new Date().toISOString() : null } : m)) }));
                       if (d && soundOn) sounds.done();
-                      const res = await A.toggleMilestone(id, d);
+                      const res = await safe(A.toggleMilestone(id, d));
                       if (!res.ok) flash(res.error, "error");
                     }}
                     onAddMilestone={async (title) => {
-                      const res = await A.addMilestone(g.id, title);
+                      const res = await safe(A.addMilestone(g.id, title));
                       if (!res.ok) return flash(res.error, "error"), false;
                       patchGoal(g.id, (x) => ({ ...x, milestones: [...x.milestones, res.milestone] }));
                       return true;
                     }}
                     onDeleteMilestone={async (id) => {
                       patchGoal(g.id, (x) => ({ ...x, milestones: x.milestones.filter((m) => m.id !== id) }));
-                      const res = await A.deleteMilestone(id);
+                      const res = await safe(A.deleteMilestone(id));
                       if (!res.ok) flash(res.error, "error");
                     }}
                     onAchieve={async (v) => {
                       patchGoal(g.id, (x) => ({ ...x, achieved_at: v ? new Date().toISOString() : null }));
                       if (v && soundOn) sounds.badge();
-                      const res = await A.setGoalAchieved(g.id, v);
+                      const res = await safe(A.setGoalAchieved(g.id, v));
                       if (!res.ok) flash(res.error, "error");
                       else if (v) flash(`Goal achieved: ${g.title} 🏆`);
                     }}
@@ -327,7 +329,7 @@ export default function PlanBoard({
                         onDeleteMilestone={() => {}}
                         onAchieve={async (v) => {
                           patchGoal(g.id, (x) => ({ ...x, achieved_at: v ? x.achieved_at : null }));
-                          const res = await A.setGoalAchieved(g.id, v);
+                          const res = await safe(A.setGoalAchieved(g.id, v));
                           if (!res.ok) flash(res.error, "error");
                         }}
                       />
@@ -350,12 +352,12 @@ export default function PlanBoard({
             onClose={() => setGoalDialog(null)}
             onSave={async (input) => {
               if (goalDialog === "new") {
-                const res = await A.addGoal(input);
+                const res = await safe(A.addGoal(input));
                 if (!res.ok) return res.error;
                 setGoals((gs) => [...gs, res.goal]);
                 flash(`Added goal: ${res.goal.title}`);
               } else {
-                const res = await A.updateGoal(goalDialog.id, input);
+                const res = await safe(A.updateGoal(goalDialog.id, input));
                 if (!res.ok) return res.error;
                 patchGoal(goalDialog.id, (g) => ({ ...g, title: input.title.trim(), why: input.why.trim() || null, emoji: input.emoji, color: input.color as Goal["color"], target_date: input.targetDate }));
                 flash("Goal saved");
@@ -367,7 +369,7 @@ export default function PlanBoard({
               goalDialog === "new"
                 ? undefined
                 : async () => {
-                    const res = await A.archiveGoal(goalDialog.id);
+                    const res = await safe(A.archiveGoal(goalDialog.id));
                     if (!res.ok) return flash(res.error, "error");
                     setGoals((gs) => gs.filter((g) => g.id !== goalDialog.id));
                     setTasks((ts) => ts.map((t) => (t.goal_id === goalDialog.id ? { ...t, goal_id: null } : t)));
@@ -408,7 +410,7 @@ function Week({ week, lastWeek, today, onSaved }: { week: WeekPlan; lastWeek: We
 
   async function save() {
     setBusy(true);
-    const res = await A.saveWeek({ week_start: week.week_start, priorities: p, wins, lessons });
+    const res = await safe(A.saveWeek({ week_start: week.week_start, priorities: p, wins, lessons }));
     setBusy(false);
     onSaved(res.ok, res.ok ? "Week saved" : res.error);
   }
