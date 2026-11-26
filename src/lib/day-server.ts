@@ -67,14 +67,8 @@ export async function saveToday(change: (current: DayLog) => DayPatch): Promise<
       {
         user_id: user.id,
         day,
-        water: next.water,
-        focus_minutes: next.focus_minutes,
-        sleep_minutes: next.sleep_minutes,
-        move_minutes: next.move_minutes,
-        mood: next.mood,
-        note: next.note,
-        steps: next.steps ?? 0,
-        meals: next.meals ?? {},
+        // Only the fields that changed are written, so two quick saves can't undo each other
+        ...clean,
         score,
         // A day counts as locked only while its score is 100; keep the first time it got there.
         locked_at: score >= 100 ? (current.locked_at ?? new Date().toISOString()) : null,
