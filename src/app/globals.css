@@ -17,6 +17,7 @@
   --rose: #ff7ba6;
   --mint: #4fe3a4;
   --glow: rgb(143 128 255 / 0.35);
+  --spot: rgb(255 255 255 / 0.07);
   color-scheme: dark;
 }
 
@@ -35,6 +36,7 @@
   --rose: #e2497d;
   --mint: #12a56b;
   --glow: rgb(107 91 240 / 0.22);
+  --spot: rgb(107 91 240 / 0.07);
   color-scheme: light;
 }
 
@@ -111,7 +113,9 @@ body {
 .fade-bottom::after { background: linear-gradient(transparent 70%, var(--bg)); }
 
 .glass {
-  background: var(--surface);
+  background-color: var(--surface);
+  /* a soft light that follows the cursor (set by <Spotlight>) */
+  background-image: radial-gradient(480px circle at var(--mx, -999px) var(--my, -999px), var(--spot), transparent 42%);
   border: 1px solid var(--line);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
@@ -149,4 +153,66 @@ body {
   body:has(.mobile-tabs) {
     padding-bottom: calc(4rem + env(safe-area-inset-bottom));
   }
+}
+
+/* Glowing, slowly turning border for the main call to action */
+@property --cta-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+.cta-glow {
+  position: relative;
+  isolation: isolate;
+}
+.cta-glow::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  z-index: -1;
+  border-radius: inherit;
+  background: conic-gradient(from var(--cta-angle), var(--violet), var(--cyan), var(--mint), var(--amber), var(--rose), var(--violet));
+  filter: blur(7px);
+  opacity: 0.75;
+  animation: cta-spin 4s linear infinite;
+}
+.cta-glow::after {
+  /* the button's own face, drawn over the glow (inside its own stacking context) */
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: inherit;
+}
+@keyframes cta-spin {
+  to { --cta-angle: 360deg; }
+}
+
+/* 3D tilt cards (<Tilt>) */
+.tilt {
+  transform-style: preserve-3d;
+  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+}
+.tilt[data-active="true"] {
+  transition: transform 0.08s linear;
+}
+.tilt-shine {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(260px circle at var(--tx, 50%) var(--ty, 50%), rgb(255 255 255 / 0.22), transparent 60%);
+  opacity: 0;
+  transition: opacity 0.3s;
+  mix-blend-mode: soft-light;
+}
+.tilt[data-active="true"] .tilt-shine {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cta-glow::before { animation: none; }
+  .tilt { transform: none !important; }
 }
