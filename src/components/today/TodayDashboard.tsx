@@ -3,12 +3,14 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import Link from "next/link";
-import { Check, Footprints, ListChecks, Minus, Moon, NotebookPen, Pencil, Play, Plus, Salad, Timer } from "lucide-react";
+import { CalendarCheck, Check, Footprints, ListChecks, Minus, Moon, NotebookPen, Pencil, Play, Plus, Salad, Timer } from "lucide-react";
 import DayRing from "@/components/ui/DayRing";
 import { sounds, type SoundName } from "@/lib/sounds";
 import { formatMinutes, minutesBetween, scoreOf, segmentsFor, sleepTarget, type DayGoals, type DayLog, type MealKey, type MealRating, type Meals } from "@/lib/day";
 import type { HabitWithHistory } from "@/lib/habits-server";
 import HabitRow from "@/components/habits/HabitRow";
+import { PRIORITIES, sortTasks, type Task } from "@/lib/plan";
+import { toggleTask } from "@/app/plan/actions";
 import { useHabits } from "@/components/habits/useHabits";
 import { updateToday } from "@/app/today/actions";
 import type { DayPatch } from "@/lib/day-server";
@@ -26,6 +28,7 @@ type Props = {
   week: { day: string; label: string; score: number; isToday: boolean }[];
   today: string;
   initialHabits: HabitWithHistory[];
+  initialTasks: Task[];
 };
 
 const MOODS = [
@@ -36,7 +39,8 @@ const MOODS = [
   { v: 5, emoji: "🤩", label: "Great" },
 ];
 
-export default function TodayDashboard({ firstName, avatar, greeting, dateLabel, goals, soundOn, initial, week, today, initialHabits }: Props) {
+export default function TodayDashboard({ firstName, avatar, greeting, dateLabel, goals, soundOn, initial, week, today, initialHabits, initialTasks }: Props) {
+  const [tasks, setTasks] = useState(initialTasks);
   const [log, setLog] = useState<DayLog>(initial);
   const [toast, setToast] = useState<{ text: string; tone: "error" | "good" } | null>(null);
   const [celebrate, setCelebrate] = useState(false);
@@ -272,6 +276,58 @@ export default function TodayDashboard({ firstName, avatar, greeting, dateLabel,
         </div>
 
         <SleepCard value={log.sleep_minutes} goals={goals} onSave={(n) => save({ sleep_minutes: n })} />
+
+        <div className="glass rounded-[28px] p-6">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <span className="grid h-10 w-10 place-items-center rounded-xl bg-violet/15 text-violet">
+                <CalendarCheck size={20} />
+              </span>
+              <h2 className="font-display text-lg font-bold">Today&apos;s tasks</h2>
+            </div>
+            {tasks.length > 0 && (
+              <span className="text-sm font-semibold tabular-nums text-muted">
+                {tasks.filter((t) => t.done_at).length}/{tasks.length}
+              </span>
+            )}
+          </div>
+          {tasks.length === 0 ? (
+            <p className="mt-4 text-sm text-muted">No tasks for today yet. Pick the 1 to 3 things that would make today a win.</p>
+          ) : (
+            <ul className="mt-3 space-y-1">
+              {[...tasks].sort(sortTasks).slice(0, 6).map((t) => {
+                const p = PRIORITIES.find((x) => x.v === t.priority)!;
+                return (
+                  <li key={t.id} className="flex items-center gap-3 py-1.5">
+                    <button
+                      onClick={async () => {
+                        const done = !t.done_at;
+                        setTasks((ts) => ts.map((x) => (x.id === t.id ? { ...x, done_at: done ? new Date().toISOString() : null } : x)));
+                        if (done) play("done");
+                        const res = await toggleTask(t.id, done);
+                        if (!res.ok) {
+                          setTasks((ts) => ts.map((x) => (x.id === t.id ? t : x)));
+                          setToast({ text: res.error, tone: "error" });
+                        }
+                      }}
+                      aria-label={`${t.title}: ${t.done_at ? "done" : "not done"}`}
+                      aria-pressed={Boolean(t.done_at)}
+                      className="grid h-6 w-6 shrink-0 place-items-center rounded-full border-2"
+                      style={{ borderColor: p.color, background: t.done_at ? p.color : "transparent" }}
+                    >
+                      {t.done_at && <Check size={12} strokeWidth={3} className="text-white" />}
+                    </button>
+                    <span className={`min-w-0 flex-1 truncate text-sm font-medium ${t.done_at ? "text-muted line-through" : ""}`}>{t.title}</span>
+                    {t.due && t.due < today && !t.done_at && <span className="text-xs font-semibold text-rose">Overdue</span>}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+          <Link href="/plan" className="mt-3 inline-block text-sm font-semibold text-violet hover:underline">
+            {tasks.length ? "Open your plan" : "Plan your day"}
+          </Link>
+        </div>
 
         <HealthCard
           steps={log.steps}
@@ -570,7 +626,7 @@ function JournalCard({ note, onSave }: { note: string | null; onSave: (note: str
   }
 
   return (
-    <div className="glass rounded-[28px] p-6 md:col-span-2 lg:col-span-3">
+    <div className="glass rounded-[28px] p-6 md:col-span-2">
       <div className="flex items-center gap-3">
         <span className="grid h-10 w-10 place-items-center rounded-xl bg-rose/15 text-rose">
           <NotebookPen size={20} />
