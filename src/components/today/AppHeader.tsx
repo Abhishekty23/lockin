@@ -4,19 +4,30 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
-import { LogOut, Settings } from "lucide-react";
+import {
+  CalendarDays,
+  Flame,
+  LogOut,
+  NotebookPen,
+  Repeat,
+  Settings,
+  Timer,
+  type LucideIcon,
+} from "lucide-react";
 import AlertCenter, { type AlertSetup } from "@/components/alerts/AlertCenter";
 import Logo from "@/components/ui/Logo";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import { signOut } from "@/app/auth/actions";
 
-const NAV = [
-  { href: "/today", label: "Today" },
-  { href: "/focus", label: "Focus" },
-  { href: "/habits", label: "Habits" },
-  { href: "/plan", label: "Plan" },
-  { href: "/insights", label: "Insights", soon: true },
-];
+const NAV: { href: string; label: string; icon: LucideIcon; soon?: boolean }[] =
+  [
+    { href: "/today", label: "Today", icon: Flame },
+    { href: "/focus", label: "Focus", icon: Timer },
+    { href: "/habits", label: "Habits", icon: Repeat },
+    { href: "/plan", label: "Plan", icon: CalendarDays },
+    { href: "/journal", label: "Journal", icon: NotebookPen },
+    { href: "/insights", label: "Insights", icon: Flame, soon: true },
+  ];
 
 // Top bar for every signed-in page.
 export default function AppHeader({
@@ -124,6 +135,32 @@ export default function AppHeader({
           </div>
         </div>
       </header>
+      {/* Phones: the same pages as a tab bar at the bottom, within thumb reach */}
+      <nav
+        aria-label="Main"
+        className="mobile-tabs fixed inset-x-0 bottom-0 z-40 border-t border-line bg-bg/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl md:hidden"
+      >
+        <div className="mx-auto grid max-w-md grid-cols-5">
+          {NAV.filter((n) => !n.soon).map((n) => {
+            const on = path === n.href;
+            return (
+              <Link
+                key={n.href}
+                href={n.href}
+                aria-current={on ? "page" : undefined}
+                className={`flex h-16 flex-col items-center justify-center gap-1 text-[11px] font-semibold transition ${on ? "text-ink" : "text-muted"}`}
+              >
+                <span
+                  className={`grid h-8 w-12 place-items-center rounded-full transition ${on ? "bg-violet/20 text-violet" : ""}`}
+                >
+                  <n.icon size={19} strokeWidth={on ? 2.4 : 2} />
+                </span>
+                {n.label}
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
       {/* Outside the header: its blur would trap full-screen overlays inside it */}
       {alerts && <AlertCenter setup={alerts} />}
     </>

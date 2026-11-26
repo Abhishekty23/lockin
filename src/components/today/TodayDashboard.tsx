@@ -120,7 +120,7 @@ export default function TodayDashboard({ firstName, avatar, greeting, dateLabel,
           water: `Drink a glass of water. ${Math.max(0, goals.water_goal - log.water)} to go.`,
           sleep: "Log how you slept last night.",
           move: `Move for ${Math.max(5, goals.move_goal_minutes - log.move_minutes)} minutes: a walk counts.`,
-          journal: "Write one line about your day.",
+          journal: "Write one line, or a full entry in your journal.",
           habits: `Tick off your habits. ${habitsState.progress.total - habitsState.progress.done} left today.`,
         }[weakest.key] ?? "";
 
@@ -378,7 +378,7 @@ export default function TodayDashboard({ firstName, avatar, greeting, dateLabel,
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 24 }}
-            className={`fixed bottom-6 left-1/2 z-40 -translate-x-1/2 rounded-2xl px-5 py-3 text-sm font-semibold shadow-2xl ring-1 ${
+            className={`fixed bottom-24 md:bottom-6 left-1/2 z-40 -translate-x-1/2 rounded-2xl px-5 py-3 text-sm font-semibold shadow-2xl ring-1 ${
               toast.tone === "error" ? "bg-surface-strong text-rose ring-rose/30" : "bg-surface-strong text-ink ring-mint/40"
             }`}
           >
@@ -637,6 +637,9 @@ function JournalCard({ note, onSave }: { note: string | null; onSave: (note: str
           <h2 className="font-display text-lg font-bold">One line about today</h2>
           <p className="text-sm text-muted">A win, a lesson, or how it went. It fills your journal segment.</p>
         </div>
+        <Link href="/journal" className="ml-auto shrink-0 rounded-xl px-3 py-2 text-sm font-semibold text-rose ring-1 ring-rose/30 transition hover:bg-rose/10">
+          Open journal
+        </Link>
       </div>
       <form
         className="mt-4 flex flex-col gap-2 sm:flex-row"
