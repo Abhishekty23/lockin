@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "motion/react";
 import { Check, Coffee, Droplets, Eye, Maximize, Minimize, Pause, Play, Square, Trash2, Volume2, Zap } from "lucide-react";
-import { sounds } from "@/lib/sounds";
+import { getAudio, sounds } from "@/lib/sounds";
 import { AMBIENTS, playAmbient, type AmbientKind, type AmbientPlayer } from "@/lib/ambient";
 import { formatMinutes } from "@/lib/day";
 import { addWaterGlass, deleteFocusSession, saveFocusSession, type FocusSession } from "@/app/focus/actions";
@@ -91,6 +91,7 @@ export default function FocusRoom({
   const [toast, setToast] = useState<{ text: string; tone: "good" | "error" } | null>(null);
   const [full, setFull] = useState(false);
   const [tip, setTip] = useState(0);
+  const [soundBlocked, setSoundBlocked] = useState(false); // browsers mute pages until you tap after a reload
 
   // today
   const [sessions, setSessions] = useState(initialSessions);
@@ -181,6 +182,7 @@ export default function FocusRoom({
       }
       setActive(saved);
       setNow(Date.now());
+      if (saved.phase === "focus" && saved.ambient !== "none" && saved.endAt) setSoundBlocked(true);
     }, 0);
     return () => clearTimeout(t);
   }, [finishFocus]);
@@ -564,6 +566,17 @@ export default function FocusRoom({
                           <Square size={18} />
                         </button>
                       </div>
+                      {soundBlocked && active.ambient !== "none" && (
+                        <button
+                          onClick={() => {
+                            void getAudio()?.resume();
+                            setSoundBlocked(false);
+                          }}
+                          className="mt-6 inline-flex items-center gap-2 rounded-full bg-cyan px-5 py-2.5 text-sm font-semibold text-bg"
+                        >
+                          <Volume2 size={16} /> Tap to turn the sound back on
+                        </button>
+                      )}
                       <button
                         onClick={() => update({ ...active, distractions: active.distractions + 1 })}
                         className="mt-6 rounded-full bg-surface px-5 py-2.5 text-sm font-semibold ring-1 ring-line transition hover:ring-amber/60"
