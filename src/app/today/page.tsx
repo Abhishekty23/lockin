@@ -6,6 +6,7 @@ import type { Task } from "@/lib/plan";
 import AppHeader from "@/components/today/AppHeader";
 import { alertSetupFrom } from "@/lib/alerts";
 import TodayDashboard from "@/components/today/TodayDashboard";
+import { emptyProgress, type Progress } from "@/lib/progress";
 
 export const metadata = { title: "Today | LockIn" };
 
@@ -27,7 +28,7 @@ export default async function Page() {
 
   const today = dayIn(profile.timezone);
   const from = addDays(today, -6);
-  const [{ data: rows }, habits, { data: tasks }] = await Promise.all([
+  const [{ data: rows }, habits, { data: tasks }, { data: prog }] = await Promise.all([
     supabase.from("day_logs").select("*").eq("user_id", user.id).gte("day", from).lte("day", today).returns<DayLog[]>(),
     loadHabits(supabase, user.id, today),
     supabase
@@ -39,6 +40,7 @@ export default async function Page() {
       .order("priority")
       .limit(12)
       .returns<Task[]>(),
+    supabase.rpc("my_progress"),
   ]);
 
   const byDay = new Map((rows ?? []).map((r) => [r.day, r]));
@@ -72,6 +74,7 @@ export default async function Page() {
         today={today}
         initialHabits={habits}
         initialTasks={tasks ?? []}
+        progress={((prog as Progress[] | null) ?? [])[0] ?? emptyProgress}
       />
     </div>
   );
