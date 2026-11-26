@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "motion/react";
 import {
+  BarChart3,
   CalendarDays,
   Flame,
   LogOut,
@@ -26,7 +27,7 @@ const NAV: { href: string; label: string; icon: LucideIcon; soon?: boolean }[] =
     { href: "/habits", label: "Habits", icon: Repeat },
     { href: "/plan", label: "Plan", icon: CalendarDays },
     { href: "/journal", label: "Journal", icon: NotebookPen },
-    { href: "/insights", label: "Insights", icon: Flame, soon: true },
+    { href: "/insights", label: "Insights", icon: BarChart3 },
   ];
 
 // Top bar for every signed-in page.
@@ -140,7 +141,7 @@ export default function AppHeader({
         aria-label="Main"
         className="mobile-tabs fixed inset-x-0 bottom-0 z-40 border-t border-line bg-bg/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl md:hidden"
       >
-        <div className="mx-auto grid max-w-md grid-cols-5">
+        <div className="mx-auto grid max-w-lg grid-cols-6">
           {NAV.filter((n) => !n.soon).map((n) => {
             const on = path === n.href;
             return (
