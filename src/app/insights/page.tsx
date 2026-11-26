@@ -19,7 +19,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ d
 
   return (
     <div className="sky min-h-screen">
-      <AppHeader name={profile.full_name ?? "You"} avatar={profile.avatar} email={user.email ?? ""} alerts={alertSetupFrom(profile)} />
+      <AppHeader name={profile.full_name ?? "You"} avatar={profile.avatar} email={user.email ?? ""} alerts={alertSetupFrom(profile)} isAdmin={profile.role === "admin"} />
       <InsightsBoard summary={summary} year={yearGrid(data)} />
     </div>
   );
