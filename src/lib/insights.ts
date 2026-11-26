@@ -126,6 +126,14 @@ function measure(data: InsightData, range: Range) {
   const moodDays = days.filter((d) => d.mood != null);
   const moodCounts = [1, 2, 3, 4, 5].map((v) => moodDays.filter((d) => d.mood === v).length);
   const moodAvg = moodDays.length ? Math.round(avg(moodDays.map((d) => d.mood ?? 0)) * 10) / 10 : null;
+  // Most common mood; when two are equally common, the one closer to the average wins
+  const usualMood = moodDays.length
+    ? [1, 2, 3, 4, 5].reduce((best, v) => {
+        const c = moodCounts[v - 1];
+        const b = moodCounts[best - 1];
+        return c > b || (c === b && Math.abs(v - (moodAvg ?? 3)) < Math.abs(best - (moodAvg ?? 3))) ? v : best;
+      }, 1)
+    : null;
   const byMood = [1, 2, 3, 4, 5].map((v) => {
     const ds = moodDays.filter((d) => d.mood === v);
     const slept = ds.filter((d) => d.sleep_minutes != null);
@@ -184,7 +192,7 @@ function measure(data: InsightData, range: Range) {
     sleep: { avg: sleepAvg, target, nights: nights.length, onTarget: nightsOnTarget },
     water: { avg: waterAvg, goal: goals.water_goal, daysOnGoal: waterDays },
     move: { avg: moveAvg, steps: stepsAvg, goal: goals.move_goal_minutes, stepsGoal: goals.steps_goal || 8000, daysOnGoal: moveDays },
-    mood: { counts: moodCounts, avg: moodAvg, logged: moodDays.length, byMood },
+    mood: { counts: moodCounts, avg: moodAvg, usual: usualMood, logged: moodDays.length, byMood },
     habits,
     tasks: { done: tasks.length, onTime, overdue: data.overdue },
     journal: { entries: entries.length, words },
@@ -232,7 +240,8 @@ function findingsFor(s: Measured, days: DayPoint[]): Finding[] {
     let bestH = 0;
     let bestM = 0;
     for (let h = 0; h < 24; h++) {
-      const m = s.focus.byHour[h] + s.focus.byHour[(h + 1) % 24];
+      // A two-hour window; on a tie, prefer the one that starts with the busier hour
+      const m = (s.focus.byHour[h] + s.focus.byHour[(h + 1) % 24]) * 1000 + s.focus.byHour[h];
       if (m > bestM) [bestH, bestM] = [h, m];
     }
     if (bestM > 0) out.push({ emoji: "⏰", tone: "neutral", text: `Your most focused time is ${hourLabel(bestH)} to ${hourLabel((bestH + 2) % 24)}. Protect it for hard work.` });
