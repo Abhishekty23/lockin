@@ -9,6 +9,7 @@ export type DayLog = {
   move_minutes: number;
   mood: number | null;
   note: string | null;
+  journaled: boolean; // a full journal entry was written
   steps: number;
   meals: Meals;
   score: number;
@@ -39,6 +40,7 @@ export const emptyDay = (day: string): DayLog => ({
   move_minutes: 0,
   mood: null,
   note: null,
+  journaled: false,
   steps: 0,
   meals: {},
   score: 0,
@@ -97,7 +99,7 @@ export function segmentsFor(log: DayLog, goals: DayGoals, habits?: HabitProgress
       color: "var(--amber)",
       value: clamp01(Math.max(log.move_minutes / goals.move_goal_minutes, (log.steps ?? 0) / (goals.steps_goal || 8000))),
     },
-    { key: "journal", label: "Journal", color: "var(--rose)", value: log.note?.trim() ? 1 : 0 },
+    { key: "journal", label: "Journal", color: "var(--rose)", value: log.note?.trim() || log.journaled ? 1 : 0 },
   ];
   // Habits only join the ring on days that have habits scheduled
   if (habits && habits.total > 0) segments.splice(4, 0, { key: "habits", label: "Habits", color: "var(--mint)", value: clamp01(habits.done / habits.total) });

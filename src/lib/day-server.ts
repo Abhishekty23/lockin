@@ -19,7 +19,7 @@ export async function habitProgress(supabase: DB, userId: string, day: string): 
 const MEAL_KEYS: MealKey[] = ["breakfast", "lunch", "dinner", "snacks"];
 const RATINGS: MealRating[] = ["good", "okay", "junk"];
 
-export type DayPatch = Partial<Pick<DayLog, "water" | "focus_minutes" | "sleep_minutes" | "move_minutes" | "mood" | "note" | "steps" | "meals">>;
+export type DayPatch = Partial<Pick<DayLog, "water" | "focus_minutes" | "sleep_minutes" | "move_minutes" | "mood" | "note" | "journaled" | "steps" | "meals">>;
 
 const int = (v: unknown, lo: number, hi: number) => Math.min(hi, Math.max(lo, Math.round(Number(v) || 0)));
 
@@ -48,6 +48,7 @@ export async function saveToday(change: (current: DayLog) => DayPatch): Promise<
   if ("sleep_minutes" in patch) clean.sleep_minutes = patch.sleep_minutes == null ? null : int(patch.sleep_minutes, 0, 1440);
   if ("mood" in patch) clean.mood = patch.mood == null ? null : int(patch.mood, 1, 5);
   if ("note" in patch) clean.note = patch.note?.trim().slice(0, 280) || null;
+  if ("journaled" in patch) clean.journaled = !!patch.journaled;
   if ("steps" in patch) clean.steps = int(patch.steps, 0, 100000);
   if ("meals" in patch) {
     const meals: Meals = {};
