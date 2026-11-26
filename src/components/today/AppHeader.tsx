@@ -11,7 +11,9 @@ import {
   LogOut,
   NotebookPen,
   Repeat,
+  MessageSquarePlus,
   Settings,
+  Shield,
   Sun,
   Timer,
   type LucideIcon,
@@ -19,6 +21,8 @@ import {
 import AlertCenter, { type AlertSetup } from "@/components/alerts/AlertCenter";
 import Logo from "@/components/ui/Logo";
 import ThemeToggle from "@/components/ui/ThemeToggle";
+import AnnouncementBar from "@/components/ui/AnnouncementBar";
+import FeedbackDialog from "@/components/ui/FeedbackDialog";
 import { signOut } from "@/app/auth/actions";
 
 const NAV: { href: string; label: string; icon: LucideIcon; soon?: boolean }[] =
@@ -38,14 +42,17 @@ export default function AppHeader({
   avatar,
   email,
   alerts,
+  isAdmin = false,
 }: {
   name: string;
   avatar: string;
   email: string;
   alerts?: AlertSetup;
+  isAdmin?: boolean;
 }) {
   const path = usePathname();
   const [open, setOpen] = useState(false);
+  const [feedback, setFeedback] = useState(false);
   const menu = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -127,6 +134,24 @@ export default function AppHeader({
                   >
                     <Settings size={16} /> Settings and alerts
                   </Link>
+                  <button
+                    onClick={() => {
+                      setOpen(false);
+                      setFeedback(true);
+                    }}
+                    className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm font-semibold transition hover:bg-surface"
+                  >
+                    <MessageSquarePlus size={16} /> Send feedback
+                  </button>
+                  {isAdmin && (
+                    <Link
+                      href="/admin"
+                      onClick={() => setOpen(false)}
+                      className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-semibold text-violet transition hover:bg-violet/10"
+                    >
+                      <Shield size={16} /> Admin panel
+                    </Link>
+                  )}
                   <form action={signOut}>
                     <button className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-rose transition hover:bg-rose/10">
                       <LogOut size={16} /> Log out
@@ -138,6 +163,8 @@ export default function AppHeader({
           </div>
         </div>
       </header>
+      <AnnouncementBar />
+      <FeedbackDialog open={feedback} onClose={() => setFeedback(false)} />
       {/* Phones: the same pages as a tab bar at the bottom, within thumb reach */}
       <nav
         aria-label="Main"
