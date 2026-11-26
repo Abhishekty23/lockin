@@ -53,23 +53,27 @@ export default function HabitsBoard({ initial, today, soundOn }: { initial: Habi
 
         {habits.length > 0 && (
           <>
+            {progress.total > 0 && (
+              <>
             <div className="mt-8 flex items-center justify-between text-sm">
-              <span className="font-semibold">Today</span>
-              <span className="tabular-nums text-muted">
-                {progress.done} of {progress.total} done
-              </span>
-            </div>
-            <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-line">
-              <motion.div
-                className="h-full rounded-full bg-mint"
-                initial={false}
-                animate={{ width: `${progress.total ? (progress.done / progress.total) * 100 : 0}%` }}
-                transition={{ type: "spring", stiffness: 90, damping: 18 }}
-              />
-            </div>
+                  <span className="font-semibold">Today</span>
+                  <span className="tabular-nums text-muted">
+                    {progress.done} of {progress.total} done
+                  </span>
+                </div>
+                <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-line">
+                  <motion.div
+                    className="h-full rounded-full bg-mint"
+                    initial={false}
+                    animate={{ width: `${progress.total ? (progress.done / progress.total) * 100 : 0}%` }}
+                    transition={{ type: "spring", stiffness: 90, damping: 18 }}
+                  />
+                </div>
+              </>
+            )}
 
             {dueToday.length === 0 ? (
-              <p className="mt-5 text-muted">Nothing scheduled today. Enjoy the rest day. 🌿</p>
+              <p className="mt-8 text-muted">Nothing scheduled today. Enjoy the rest day. 🌿</p>
             ) : (
               <div className="mt-5 grid gap-2.5 md:grid-cols-2">
                 {dueToday.map((h) => (
