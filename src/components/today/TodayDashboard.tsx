@@ -1,5 +1,7 @@
 "use client";
 
+import { safe } from "@/lib/net";
+
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import Link from "next/link";
@@ -99,7 +101,7 @@ export default function TodayDashboard({ firstName, avatar, greeting, dateLabel,
   async function save(patch: DayPatch) {
     setLog((l) => ({ ...l, ...patch }));
     const mine = ++seq.current;
-    const res = await updateToday(patch);
+    const res = await safe(updateToday(patch));
     if (!res.ok) {
       setLog(saved.current);
       setToast({ text: res.error, tone: "error" });
@@ -304,7 +306,7 @@ export default function TodayDashboard({ firstName, avatar, greeting, dateLabel,
                         const done = !t.done_at;
                         setTasks((ts) => ts.map((x) => (x.id === t.id ? { ...x, done_at: done ? new Date().toISOString() : null } : x)));
                         if (done) play("done");
-                        const res = await toggleTask(t.id, done);
+                        const res = await safe(toggleTask(t.id, done));
                         if (!res.ok) {
                           setTasks((ts) => ts.map((x) => (x.id === t.id ? t : x)));
                           setToast({ text: res.error, tone: "error" });
