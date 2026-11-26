@@ -43,7 +43,7 @@ export default async function Page() {
 
   return (
     <div className="sky min-h-screen">
-      <AppHeader name={profile.full_name ?? "You"} avatar={profile.avatar} email={user.email ?? ""} alerts={alertSetupFrom(profile)} />
+      <AppHeader name={profile.full_name ?? "You"} avatar={profile.avatar} email={user.email ?? ""} alerts={alertSetupFrom(profile)} isAdmin={profile.role === "admin"} />
       <StreaksBoard
         today={today}
         username={profile.username}
