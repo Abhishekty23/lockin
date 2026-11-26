@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/supabase/server";
 import { dayIn } from "@/lib/day";
 import AppHeader from "@/components/today/AppHeader";
+import { alertSetupFrom } from "@/lib/alerts";
 import FocusRoom from "@/components/focus/FocusRoom";
 import type { FocusSession } from "./actions";
 
@@ -32,7 +33,7 @@ export default async function Page() {
 
   return (
     <div className="sky min-h-screen">
-      <AppHeader name={profile.full_name ?? "You"} avatar={profile.avatar} email={user.email ?? ""} />
+      <AppHeader name={profile.full_name ?? "You"} avatar={profile.avatar} email={user.email ?? ""} alerts={alertSetupFrom(profile)} />
       <FocusRoom
         initialSessions={sessions ?? []}
         initialFocusMinutes={log?.focus_minutes ?? 0}
