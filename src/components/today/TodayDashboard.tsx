@@ -2,11 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Check, Footprints, Minus, Moon, NotebookPen, Pencil, Plus, Timer } from "lucide-react";
+import Link from "next/link";
+import { Check, Footprints, Minus, Moon, NotebookPen, Pencil, Play, Plus, Timer } from "lucide-react";
 import DayRing from "@/components/ui/DayRing";
 import { sounds, type SoundName } from "@/lib/sounds";
 import { formatMinutes, minutesBetween, scoreOf, segmentsFor, sleepTarget, type DayGoals, type DayLog } from "@/lib/day";
-import { updateToday, type DayPatch } from "@/app/today/actions";
+import { updateToday } from "@/app/today/actions";
+import type { DayPatch } from "@/lib/day-server";
 import Celebration from "./Celebration";
 import MiniRing from "./MiniRing";
 
@@ -172,7 +174,12 @@ export default function TodayDashboard({ firstName, avatar, greeting, dateLabel,
           value={log.focus_minutes}
           goal={goals.focus_goal_minutes}
           steps={[15, 30, 60]}
-          note="Log study or deep work. A live focus timer comes in the next update."
+          note="Add time by hand, or let the timer track it for you."
+          action={
+            <Link href="/focus" className="mt-3 flex h-11 items-center justify-center gap-2 rounded-xl bg-violet font-semibold text-white transition hover:brightness-110">
+              <Play size={16} fill="currentColor" /> Start Lock In mode
+            </Link>
+          }
           onChange={(n) => {
             if (n > log.focus_minutes) play("done");
             save({ focus_minutes: n });
@@ -325,6 +332,7 @@ function StepperCard({
   goal,
   steps,
   note,
+  action,
   onChange,
 }: {
   icon: React.ReactNode;
@@ -334,6 +342,7 @@ function StepperCard({
   goal: number;
   steps: number[];
   note: string;
+  action?: React.ReactNode;
   onChange: (n: number) => void;
 }) {
   const pct = Math.min(1, value / goal);
@@ -381,6 +390,7 @@ function StepperCard({
         ))}
       </div>
       <p className="mt-3 text-sm text-muted">{note}</p>
+      {action}
     </div>
   );
 }
@@ -434,6 +444,18 @@ function SleepCard({ value, goals, onSave }: { value: number | null; goals: DayG
           <button className="mt-3 flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-cyan font-semibold text-white transition hover:brightness-110">
             <Check size={16} /> Save {formatMinutes(preview)}
           </button>
+          {value != null && (
+            <button
+              type="button"
+              onClick={() => {
+                onSave(null);
+                setEditing(true);
+              }}
+              className="mt-2 h-10 w-full rounded-xl text-sm font-semibold text-muted transition hover:text-rose"
+            >
+              Clear sleep entry
+            </button>
+          )}
         </form>
       ) : (
         <div className="mt-4">
