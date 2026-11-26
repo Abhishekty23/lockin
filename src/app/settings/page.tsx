@@ -13,7 +13,7 @@ export default async function Page() {
 
   return (
     <div className="sky min-h-screen">
-      <AppHeader name={profile.full_name ?? "You"} avatar={profile.avatar} email={user.email ?? ""} alerts={alertSetupFrom(profile)} />
+      <AppHeader name={profile.full_name ?? "You"} avatar={profile.avatar} email={user.email ?? ""} alerts={alertSetupFrom(profile)} isAdmin={profile.role === "admin"} />
       <SettingsForm
         initial={{
           fullName: profile.full_name ?? "",
