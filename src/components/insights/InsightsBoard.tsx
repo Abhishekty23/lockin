@@ -22,7 +22,7 @@ export default function InsightsBoard({ summary: s, year }: Props) {
   const daily = (value: (d: Summary["days"][number]) => number, tip: (d: Summary["days"][number]) => string, highlight?: (d: Summary["days"][number]) => boolean): BarPoint[] =>
     s.days.map((d, i) => ({ key: d.day, value: value(d), tick: tick(i, d.day), tip: `${dateLabel(d.day, { weekday: "short", day: "numeric", month: "short" })}: ${tip(d)}`, highlight: highlight?.(d), empty: !d.logged }));
 
-  const moodTop = s.mood.counts.indexOf(Math.max(...s.mood.counts));
+  const moodTop = (s.mood.usual ?? 3) - 1;
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
