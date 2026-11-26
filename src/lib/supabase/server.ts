@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import { isSupabaseConfigured, supabaseKey, supabaseUrl } from "./config";
 import type { AlertPrefs } from "@/lib/alerts";
 
@@ -48,6 +49,8 @@ export type Profile = {
   timezone: string;
   onboarded: boolean;
   created_at: string;
+  suspended_at: string | null;
+  suspended_reason: string | null;
 };
 
 export type SessionUser = { id: string; email?: string };
@@ -61,5 +64,7 @@ export async function getCurrentUser() {
   if (!claims?.sub) return { supabase, user: null, profile: null };
   const user: SessionUser = { id: claims.sub, email: typeof claims.email === "string" ? claims.email : undefined };
   const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).single<Profile>();
+  // A suspended account can't use the app (the database blocks its data too)
+  if (profile?.suspended_at) redirect("/suspended");
   return { supabase, user, profile };
 }
