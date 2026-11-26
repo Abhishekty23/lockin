@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { isSupabaseConfigured, supabaseKey, supabaseUrl } from "./config";
+import type { AlertPrefs } from "@/lib/alerts";
 
 // Supabase client for Server Components, Server Actions and Route Handlers.
 export async function createClient() {
@@ -43,6 +44,7 @@ export type Profile = {
   steps_goal: number;
   reminders: Reminders;
   sound_on: boolean;
+  alert_prefs: AlertPrefs;
   timezone: string;
   onboarded: boolean;
   created_at: string;
