@@ -113,6 +113,7 @@ export default function JournalBoard({
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const seq = useRef(0);
   const inflight = useRef<Promise<void> | null>(null);
+  const pending = useRef(0); // stars and deletes still on their way
 
   const setEntries = useCallback(
     (
@@ -199,7 +200,7 @@ export default function JournalBoard({
   useEffect(() => {
     const hide = () => document.visibilityState === "hidden" && void flush();
     const leave = (e: BeforeUnloadEvent) => {
-      if (dirty.current || inflight.current) e.preventDefault();
+      if (dirty.current || inflight.current || pending.current) e.preventDefault();
     };
     document.addEventListener("visibilitychange", hide);
     window.addEventListener("beforeunload", leave);
@@ -284,7 +285,9 @@ export default function JournalBoard({
         tone: "error",
       });
     setEntries((p) => ({ ...p, [day]: { ...e, starred: !e.starred } }));
+    pending.current++;
     const res = await safe(setStar(day, !e.starred));
+    pending.current--;
     if (!res.ok) {
       setEntries((p) => ({ ...p, [day]: e }));
       setToast({ text: res.error, tone: "error" });
@@ -296,7 +299,9 @@ export default function JournalBoard({
     clearTimeout(timer.current);
     dirty.current = false;
     await inflight.current;
+    pending.current++;
     const res = await safe(deleteEntry(day));
+    pending.current--;
     setConfirmDelete(false);
     if (!res.ok) return setToast({ text: res.error, tone: "error" });
     setEntries((p) => {
