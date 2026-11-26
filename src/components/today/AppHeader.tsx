@@ -12,6 +12,7 @@ import {
   NotebookPen,
   Repeat,
   Settings,
+  Sun,
   Timer,
   type LucideIcon,
 } from "lucide-react";
@@ -22,11 +23,12 @@ import { signOut } from "@/app/auth/actions";
 
 const NAV: { href: string; label: string; icon: LucideIcon; soon?: boolean }[] =
   [
-    { href: "/today", label: "Today", icon: Flame },
+    { href: "/today", label: "Today", icon: Sun },
     { href: "/focus", label: "Focus", icon: Timer },
     { href: "/habits", label: "Habits", icon: Repeat },
     { href: "/plan", label: "Plan", icon: CalendarDays },
     { href: "/journal", label: "Journal", icon: NotebookPen },
+  { href: "/streaks", label: "Streaks", icon: Flame },
     { href: "/insights", label: "Insights", icon: BarChart3 },
   ];
 
@@ -71,7 +73,7 @@ export default function AppHeader({
           <Link href="/today" aria-label="LockIn, today">
             <Logo />
           </Link>
-          <nav className="hidden gap-1 md:flex" aria-label="Main">
+          <nav className="hidden gap-1 lg:flex" aria-label="Main">
             {NAV.map((n) =>
               n.soon ? (
                 <span
@@ -139,9 +141,9 @@ export default function AppHeader({
       {/* Phones: the same pages as a tab bar at the bottom, within thumb reach */}
       <nav
         aria-label="Main"
-        className="mobile-tabs fixed inset-x-0 bottom-0 z-40 border-t border-line bg-bg/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl md:hidden"
+        className="mobile-tabs fixed inset-x-0 bottom-0 z-40 border-t border-line bg-bg/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden"
       >
-        <div className="mx-auto grid max-w-lg grid-cols-6">
+        <div className="mx-auto grid max-w-xl grid-cols-7">
           {NAV.filter((n) => !n.soon).map((n) => {
             const on = path === n.href;
             return (

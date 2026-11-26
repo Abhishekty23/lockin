@@ -5,6 +5,7 @@ import { safe } from "@/lib/net";
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import Link from "next/link";
+import { levelOf, type Progress } from "@/lib/progress";
 import { CalendarCheck, Check, Footprints, ListChecks, Minus, Moon, NotebookPen, Pencil, Play, Plus, Salad, Timer } from "lucide-react";
 import DayRing from "@/components/ui/DayRing";
 import { sounds, type SoundName } from "@/lib/sounds";
@@ -31,6 +32,7 @@ type Props = {
   today: string;
   initialHabits: HabitWithHistory[];
   initialTasks: Task[];
+  progress: Progress;
 };
 
 const MOODS = [
@@ -41,7 +43,7 @@ const MOODS = [
   { v: 5, emoji: "🤩", label: "Great" },
 ];
 
-export default function TodayDashboard({ firstName, avatar, greeting, dateLabel, goals, soundOn, initial, week, today, initialHabits, initialTasks }: Props) {
+export default function TodayDashboard({ firstName, avatar, greeting, dateLabel, goals, soundOn, initial, week, today, initialHabits, initialTasks, progress }: Props) {
   const [tasks, setTasks] = useState(initialTasks);
   const [log, setLog] = useState<DayLog>(initial);
   const [toast, setToast] = useState<{ text: string; tone: "error" | "good" } | null>(null);
@@ -65,8 +67,17 @@ export default function TodayDashboard({ firstName, avatar, greeting, dateLabel,
   const locked = score >= 100;
   const prevScore = useRef(score);
 
-  // Celebrate the moment the ring fills
+  // Streak: days in a row at 50+. Today joins it the moment the score reaches 50.
+  const streakBefore = initial.score >= 50 ? Math.max(0, progress.current_streak - 1) : progress.current_streak;
+  const streak = score >= 50 ? streakBefore + 1 : streakBefore;
+  const lvl = levelOf(progress.total_xp);
+
+  // Celebrate the moment the ring fills, and the moment today counts for the streak
   useEffect(() => {
+    if (score >= 50 && score < 100 && prevScore.current < 50) {
+      if (soundOn) sounds.streak();
+      setToast({ text: `🔥 Today counts! Your streak is ${streakBefore + 1} ${streakBefore + 1 === 1 ? "day" : "days"}.`, tone: "good" });
+    }
     if (score >= 100 && prevScore.current < 100) {
       if (soundOn) sounds.lock();
       setCelebrate(true);
@@ -76,7 +87,7 @@ export default function TodayDashboard({ firstName, avatar, greeting, dateLabel,
       return () => clearTimeout(t);
     }
     prevScore.current = score;
-  }, [score, soundOn]);
+  }, [score, soundOn, streakBefore]);
 
   // A water alert logged a glass somewhere else on the page
   useEffect(() => {
@@ -146,6 +157,17 @@ export default function TodayDashboard({ firstName, avatar, greeting, dateLabel,
             <h1 className="mt-1 font-display text-3xl font-bold tracking-tight sm:text-4xl">
               {firstName} {avatar}
             </h1>
+            <Link
+              href="/streaks"
+              className="mt-3 inline-flex items-center gap-2 rounded-full bg-amber/15 px-3.5 py-1.5 text-sm font-semibold ring-1 ring-amber/30 transition hover:bg-amber/25"
+            >
+              <span className={streak ? "" : "grayscale"}>🔥</span>
+              {streak ? `${streak}-day streak` : "Start a streak today"}
+              <span className="text-muted">·</span>
+              <span className="text-violet">
+                {lvl.rankEmoji} Level {lvl.level}
+              </span>
+            </Link>
             <p className="mt-4 inline-flex max-w-full items-center gap-2 rounded-2xl bg-surface-strong px-4 py-2.5 text-sm ring-1 ring-line">
               <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: locked ? "var(--mint)" : weakest.color }} />
               {nextStep}
@@ -378,7 +400,7 @@ export default function TodayDashboard({ firstName, avatar, greeting, dateLabel,
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 24 }}
-            className={`fixed bottom-24 md:bottom-6 left-1/2 z-40 -translate-x-1/2 rounded-2xl px-5 py-3 text-sm font-semibold shadow-2xl ring-1 ${
+            className={`fixed bottom-24 lg:bottom-6 left-1/2 z-40 -translate-x-1/2 rounded-2xl px-5 py-3 text-sm font-semibold shadow-2xl ring-1 ${
               toast.tone === "error" ? "bg-surface-strong text-rose ring-rose/30" : "bg-surface-strong text-ink ring-mint/40"
             }`}
           >
