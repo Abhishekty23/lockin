@@ -3,10 +3,13 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import Link from "next/link";
-import { Check, Footprints, Minus, Moon, NotebookPen, Pencil, Play, Plus, Timer } from "lucide-react";
+import { Check, Footprints, ListChecks, Minus, Moon, NotebookPen, Pencil, Play, Plus, Salad, Timer } from "lucide-react";
 import DayRing from "@/components/ui/DayRing";
 import { sounds, type SoundName } from "@/lib/sounds";
-import { formatMinutes, minutesBetween, scoreOf, segmentsFor, sleepTarget, type DayGoals, type DayLog } from "@/lib/day";
+import { formatMinutes, minutesBetween, scoreOf, segmentsFor, sleepTarget, type DayGoals, type DayLog, type MealKey, type MealRating, type Meals } from "@/lib/day";
+import type { HabitWithHistory } from "@/lib/habits-server";
+import HabitRow from "@/components/habits/HabitRow";
+import { useHabits } from "@/components/habits/useHabits";
 import { updateToday } from "@/app/today/actions";
 import type { DayPatch } from "@/lib/day-server";
 import Celebration from "./Celebration";
@@ -21,6 +24,8 @@ type Props = {
   soundOn: boolean;
   initial: DayLog;
   week: { day: string; label: string; score: number; isToday: boolean }[];
+  today: string;
+  initialHabits: HabitWithHistory[];
 };
 
 const MOODS = [
@@ -31,14 +36,25 @@ const MOODS = [
   { v: 5, emoji: "🤩", label: "Great" },
 ];
 
-export default function TodayDashboard({ firstName, avatar, greeting, dateLabel, goals, soundOn, initial, week }: Props) {
+export default function TodayDashboard({ firstName, avatar, greeting, dateLabel, goals, soundOn, initial, week, today, initialHabits }: Props) {
   const [log, setLog] = useState<DayLog>(initial);
   const [toast, setToast] = useState<{ text: string; tone: "error" | "good" } | null>(null);
   const [celebrate, setCelebrate] = useState(false);
   const saved = useRef<DayLog>(initial);
   const seq = useRef(0);
 
-  const segments = segmentsFor(log, goals);
+  const habitsState = useHabits({
+    initial: initialHabits,
+    today,
+    soundOn,
+    onLog: (l) => {
+      saved.current = l;
+      setLog((cur) => ({ ...cur, score: l.score, locked_at: l.locked_at }));
+    },
+    onError: (text) => setToast({ text, tone: "error" }),
+  });
+
+  const segments = segmentsFor(log, goals, habitsState.progress);
   const score = scoreOf(segments);
   const locked = score >= 100;
   const prevScore = useRef(score);
@@ -79,7 +95,7 @@ export default function TodayDashboard({ firstName, avatar, greeting, dateLabel,
   }
 
   const weakest = [...segments].sort((a, b) => a.value - b.value)[0];
-  const nextStep =
+  const nextStep: string =
     locked
       ? "Everything's filled. Enjoy the rest of your day."
       : {
@@ -88,7 +104,8 @@ export default function TodayDashboard({ firstName, avatar, greeting, dateLabel,
           sleep: "Log how you slept last night.",
           move: `Move for ${Math.max(5, goals.move_goal_minutes - log.move_minutes)} minutes: a walk counts.`,
           journal: "Write one line about your day.",
-        }[weakest.key];
+          habits: `Tick off your habits. ${habitsState.progress.total - habitsState.progress.done} left today.`,
+        }[weakest.key] ?? "";
 
   return (
     <div className="mx-auto max-w-6xl px-4 pb-20 pt-8 sm:px-6">
@@ -133,7 +150,7 @@ export default function TodayDashboard({ firstName, avatar, greeting, dateLabel,
                       transition={{ type: "spring", stiffness: 80, damping: 18 }}
                     />
                   </span>
-                  <span className="hidden text-right text-sm tabular-nums text-muted sm:block">{detail(s.key, log, goals)}</span>
+                  <span className="hidden text-right text-sm tabular-nums text-muted sm:block">{detail(s.key, log, goals, habitsState.progress)}</span>
                   <span className="text-right text-sm font-bold tabular-nums">{Math.round(s.value * 100)}%</span>
                 </li>
               ))}
@@ -193,14 +210,68 @@ export default function TodayDashboard({ firstName, avatar, greeting, dateLabel,
           value={log.move_minutes}
           goal={goals.move_goal_minutes}
           steps={[10, 20, 30]}
-          note="Walks, workouts, sport, stretching: any movement counts."
+          note="Walks, workouts, sport, stretching: any movement counts. Steps below count too."
           onChange={(n) => {
             if (n > log.move_minutes) play("stretch");
             save({ move_minutes: n });
           }}
         />
 
+        <div className="glass rounded-[28px] p-6">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <span className="grid h-10 w-10 place-items-center rounded-xl bg-mint/15 text-mint">
+                <ListChecks size={20} />
+              </span>
+              <h2 className="font-display text-lg font-bold">Habits</h2>
+            </div>
+            {habitsState.progress.total > 0 && (
+              <span className="text-sm font-semibold tabular-nums text-muted">
+                {habitsState.progress.done}/{habitsState.progress.total}
+              </span>
+            )}
+          </div>
+          {habitsState.habits.length === 0 ? (
+            <div className="mt-4">
+              <p className="text-sm text-muted">Add a few small daily habits. Ticking them fills a new Habits part of your ring.</p>
+              <Link href="/habits" className="mt-4 flex h-11 items-center justify-center gap-2 rounded-xl bg-mint font-semibold text-bg">
+                <Plus size={16} /> Add your first habit
+              </Link>
+            </div>
+          ) : habitsState.dueToday.length === 0 ? (
+            <p className="mt-4 text-sm text-muted">No habits planned for today. Rest day. 🌿</p>
+          ) : (
+            <div className="mt-4 space-y-2">
+              {habitsState.dueToday.map((h) => (
+                <HabitRow
+                  key={h.id}
+                  habit={h}
+                  done={habitsState.doneToday.includes(h)}
+                  compact
+                  onToggle={async () => (await habitsState.toggle(h.id)) && setToast({ text: "Every habit done today! 🎉", tone: "good" })}
+                />
+              ))}
+            </div>
+          )}
+          {habitsState.habits.length > 0 && (
+            <Link href="/habits" className="mt-3 inline-block text-sm font-semibold text-mint hover:underline">
+              Manage habits and streaks
+            </Link>
+          )}
+        </div>
+
         <SleepCard value={log.sleep_minutes} goals={goals} onSave={(n) => save({ sleep_minutes: n })} />
+
+        <HealthCard
+          steps={log.steps}
+          stepsGoal={goals.steps_goal}
+          meals={log.meals ?? {}}
+          onSteps={(n) => {
+            if (n > log.steps) play("stretch");
+            save({ steps: n });
+          }}
+          onMeals={(m) => save({ meals: m })}
+        />
 
         <div className="glass rounded-[28px] p-6">
           <h2 className="font-display text-lg font-bold">How are you feeling?</h2>
@@ -250,7 +321,7 @@ export default function TodayDashboard({ firstName, avatar, greeting, dateLabel,
   );
 }
 
-function detail(key: string, log: DayLog, goals: DayGoals) {
+function detail(key: string, log: DayLog, goals: DayGoals, habits?: { done: number; total: number }) {
   switch (key) {
     case "focus":
       return `${formatMinutes(log.focus_minutes)} / ${formatMinutes(goals.focus_goal_minutes)}`;
@@ -259,7 +330,11 @@ function detail(key: string, log: DayLog, goals: DayGoals) {
     case "sleep":
       return log.sleep_minutes == null ? "Not logged" : `${formatMinutes(log.sleep_minutes)} / ${formatMinutes(sleepTarget(goals))}`;
     case "move":
-      return `${formatMinutes(log.move_minutes)} / ${formatMinutes(goals.move_goal_minutes)}`;
+      return log.steps / goals.steps_goal > log.move_minutes / goals.move_goal_minutes
+        ? `${log.steps.toLocaleString("en-IN")} steps`
+        : `${formatMinutes(log.move_minutes)} / ${formatMinutes(goals.move_goal_minutes)}`;
+    case "habits":
+      return `${habits?.done ?? 0} / ${habits?.total ?? 0} done`;
     default:
       return log.note?.trim() ? "Written" : "Not yet";
   }
@@ -517,6 +592,136 @@ function JournalCard({ note, onSave }: { note: string | null; onSave: (note: str
           {savedText && !dirty ? "Saved" : "Save"}
         </button>
       </form>
+    </div>
+  );
+}
+
+/* ---------- Steps + meals ---------- */
+const MEALS: { key: MealKey; label: string }[] = [
+  { key: "breakfast", label: "Breakfast" },
+  { key: "lunch", label: "Lunch" },
+  { key: "dinner", label: "Dinner" },
+  { key: "snacks", label: "Snacks" },
+];
+const RATINGS: { v: MealRating; emoji: string; label: string }[] = [
+  { v: "good", emoji: "🥗", label: "Healthy" },
+  { v: "okay", emoji: "🍛", label: "Okay" },
+  { v: "junk", emoji: "🍔", label: "Junk" },
+];
+
+function HealthCard({
+  steps,
+  stepsGoal,
+  meals,
+  onSteps,
+  onMeals,
+}: {
+  steps: number;
+  stepsGoal: number;
+  meals: Meals;
+  onSteps: (n: number) => void;
+  onMeals: (m: Meals) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(String(steps));
+  const pct = Math.min(1, steps / stepsGoal);
+
+  return (
+    <div className="glass rounded-[28px] p-6 md:col-span-2">
+      <div className="grid gap-6 sm:grid-cols-2">
+        <div>
+          <div className="flex items-center gap-3">
+            <span className="grid h-10 w-10 place-items-center rounded-xl bg-amber/15 text-amber">
+              <Footprints size={20} />
+            </span>
+            <h2 className="font-display text-lg font-bold">Steps</h2>
+          </div>
+          {editing ? (
+            <form
+              className="mt-4 flex gap-2"
+              onSubmit={(e) => {
+                e.preventDefault();
+                onSteps(Math.max(0, Math.min(100000, Math.round(Number(draft) || 0))));
+                setEditing(false);
+              }}
+            >
+              <input
+                type="number"
+                inputMode="numeric"
+                min={0}
+                max={100000}
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                autoFocus
+                aria-label="Steps today"
+                className="h-12 min-w-0 flex-1 rounded-xl border border-line bg-surface px-4 text-lg font-semibold outline-none focus:border-amber"
+              />
+              <button className="h-12 rounded-xl bg-amber px-5 font-semibold text-bg">Save</button>
+            </form>
+          ) : (
+            <button
+              onClick={() => {
+                setDraft(String(steps));
+                setEditing(true);
+              }}
+              className="mt-3 text-left"
+              aria-label="Type your step count"
+            >
+              <span className="font-display text-3xl font-bold tabular-nums">{steps.toLocaleString("en-IN")}</span>
+              <span className="text-muted"> / {stepsGoal.toLocaleString("en-IN")}</span>
+            </button>
+          )}
+          <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-line">
+            <motion.div className="h-full rounded-full bg-amber" initial={false} animate={{ width: `${pct * 100}%` }} />
+          </div>
+          <div className="mt-4 flex gap-2">
+            {[500, 1000, 2000].map((n) => (
+              <button
+                key={n}
+                onClick={() => onSteps(Math.min(100000, steps + n))}
+                className="h-10 flex-1 rounded-xl bg-surface-strong text-sm font-semibold ring-1 ring-line transition hover:ring-amber/60"
+              >
+                +{n >= 1000 ? `${n / 1000}k` : n}
+              </button>
+            ))}
+          </div>
+          <p className="mt-2 text-xs text-muted">Copy the number from your phone&apos;s step counter, or tap to add.</p>
+        </div>
+
+        <div>
+          <div className="flex items-center gap-3">
+            <span className="grid h-10 w-10 place-items-center rounded-xl bg-mint/15 text-mint">
+              <Salad size={20} />
+            </span>
+            <h2 className="font-display text-lg font-bold">Meals</h2>
+          </div>
+          <ul className="mt-4 space-y-2">
+            {MEALS.map((m) => (
+              <li key={m.key} className="flex items-center gap-2">
+                <span className="w-20 text-sm font-semibold">{m.label}</span>
+                <div className="grid flex-1 grid-cols-3 gap-1.5">
+                  {RATINGS.map((r) => {
+                    const on = meals[m.key] === r.v;
+                    return (
+                      <button
+                        key={r.v}
+                        onClick={() => onMeals({ ...meals, [m.key]: on ? undefined : r.v })}
+                        aria-pressed={on}
+                        aria-label={`${m.label}: ${r.label}`}
+                        title={r.label}
+                        className={`h-10 rounded-xl text-lg transition ${on ? "bg-mint/15 ring-2 ring-mint" : "bg-surface ring-1 ring-line hover:ring-mint/40"}`}
+                      >
+                        {r.emoji}
+                      </button>
+                    );
+                  })}
+                </div>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-2 text-xs text-muted">🥗 healthy, 🍛 okay, 🍔 junk. No calorie counting.</p>
+        </div>
+      </div>
     </div>
   );
 }
