@@ -1,0 +1,145 @@
+@import "tailwindcss";
+
+/* LockIn design tokens. Dark = "midnight sky", light = "soft dawn". */
+:root,
+[data-theme="dark"] {
+  --bg: #0d1130;
+  --bg-2: #121844;
+  --surface: rgb(255 255 255 / 0.045);
+  --surface-strong: #182055;
+  --line: rgb(255 255 255 / 0.09);
+  --ink: #eef0ff;
+  --muted: #9aa3d6;
+  --violet: #8f80ff;
+  --cyan: #46d4ea;
+  --amber: #ffb547;
+  --water: #5aa9ff;
+  --rose: #ff7ba6;
+  --mint: #4fe3a4;
+  --glow: rgb(143 128 255 / 0.35);
+  color-scheme: dark;
+}
+
+[data-theme="light"] {
+  --bg: #f1f3ff;
+  --bg-2: #e7e9ff;
+  --surface: rgb(255 255 255 / 0.72);
+  --surface-strong: #ffffff;
+  --line: rgb(27 31 69 / 0.09);
+  --ink: #1b1f45;
+  --muted: #5b6290;
+  --violet: #6b5bf0;
+  --cyan: #0b9fbb;
+  --amber: #df8a00;
+  --water: #2f7fe0;
+  --rose: #e2497d;
+  --mint: #12a56b;
+  --glow: rgb(107 91 240 / 0.22);
+  color-scheme: light;
+}
+
+@theme inline {
+  --font-sans: "Manrope Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Sora Variable", ui-sans-serif, system-ui, sans-serif;
+  --color-bg: var(--bg);
+  --color-bg-2: var(--bg-2);
+  --color-surface: var(--surface);
+  --color-surface-strong: var(--surface-strong);
+  --color-line: var(--line);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-violet: var(--violet);
+  --color-cyan: var(--cyan);
+  --color-amber: var(--amber);
+  --color-water: var(--water);
+  --color-rose: var(--rose);
+  --color-mint: var(--mint);
+}
+
+html {
+  scroll-behavior: smooth;
+  background: var(--bg);
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  transition: background-color 0.4s ease, color 0.4s ease;
+}
+
+::selection {
+  background: var(--violet);
+  color: #fff;
+}
+
+:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 3px;
+  border-radius: 8px;
+}
+
+/* Night sky: a few soft stars, only in dark mode */
+.sky {
+  background:
+    radial-gradient(1.5px 1.5px at 12% 18%, rgb(255 255 255 / 0.55), transparent 60%),
+    radial-gradient(1px 1px at 28% 72%, rgb(255 255 255 / 0.4), transparent 60%),
+    radial-gradient(1.5px 1.5px at 64% 12%, rgb(255 255 255 / 0.5), transparent 60%),
+    radial-gradient(1px 1px at 82% 44%, rgb(255 255 255 / 0.45), transparent 60%),
+    radial-gradient(1px 1px at 46% 38%, rgb(255 255 255 / 0.3), transparent 60%),
+    radial-gradient(1.5px 1.5px at 90% 82%, rgb(255 255 255 / 0.35), transparent 60%),
+    radial-gradient(900px 500px at 75% -10%, rgb(143 128 255 / 0.22), transparent 70%),
+    radial-gradient(700px 500px at 0% 110%, rgb(70 212 234 / 0.12), transparent 70%);
+}
+
+[data-theme="light"] .sky {
+  background:
+    radial-gradient(900px 500px at 75% -10%, rgb(255 181 71 / 0.25), transparent 70%),
+    radial-gradient(800px 500px at 0% 0%, rgb(107 91 240 / 0.14), transparent 70%),
+    radial-gradient(700px 500px at 100% 100%, rgb(11 159 187 / 0.1), transparent 70%);
+}
+
+/* Soft fade so a section's glow never ends in a hard edge */
+.fade-edges, .fade-bottom { position: relative; isolation: isolate; }
+.fade-edges::after, .fade-bottom::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+.fade-edges::after { background: linear-gradient(var(--bg), transparent 22%, transparent 78%, var(--bg)); }
+.fade-bottom::after { background: linear-gradient(transparent 70%, var(--bg)); }
+
+.glass {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+@keyframes breathe {
+  0%, 100% { transform: scale(0.92); opacity: 0.75; }
+  50% { transform: scale(1.06); opacity: 1; }
+}
+@keyframes flicker {
+  0%, 100% { transform: scale(1) rotate(-2deg); }
+  50% { transform: scale(1.08) rotate(2deg); }
+}
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.animate-breathe { animation: breathe 6s ease-in-out infinite; }
+.animate-flicker { animation: flicker 1.6s ease-in-out infinite; transform-origin: 50% 90%; }
+
+/* Theme switch: circular reveal (View Transitions API) */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .animate-breathe, .animate-flicker { animation: none; }
+}
