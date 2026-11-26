@@ -1,5 +1,7 @@
 "use client";
 
+import { safe } from "@/lib/net";
+
 import { useState } from "react";
 import { sounds } from "@/lib/sounds";
 import { addDays, type DayLog } from "@/lib/day";
@@ -48,7 +50,7 @@ export function useHabits({
       else sounds.done();
     }
 
-    const res = await toggleHabit(id, done);
+    const res = await safe(toggleHabit(id, done));
     if (!res.ok) {
       setHabits(before);
       onError(res.error);
@@ -59,7 +61,7 @@ export function useHabits({
   }
 
   async function create(input: HabitInput) {
-    const res = await createHabit(input);
+    const res = await safe(createHabit(input));
     if (!res.ok) return res.error;
     setHabits((hs) => [...hs, { ...res.habit, doneDays: [], streak: 0, best: 0 }]);
     onLog?.(res.log);
@@ -67,7 +69,7 @@ export function useHabits({
   }
 
   async function update(id: string, input: HabitInput) {
-    const res = await updateHabit(id, input);
+    const res = await safe(updateHabit(id, input));
     if (!res.ok) return res.error;
     setHabits((hs) => hs.map((h) => (h.id === id ? withStats({ ...h, ...res.habit }, h.doneDays) : h)));
     onLog?.(res.log);
@@ -75,7 +77,7 @@ export function useHabits({
   }
 
   async function remove(id: string) {
-    const res = await archiveHabit(id);
+    const res = await safe(archiveHabit(id));
     if (!res.ok) return res.error;
     setHabits((hs) => hs.filter((h) => h.id !== id));
     onLog?.(res.log);
