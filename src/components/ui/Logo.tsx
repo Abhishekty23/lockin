@@ -1,9 +1,12 @@
+import { useId } from "react";
+
 // LockIn mark: a padlock whose body is a progress ring.
 export function LockMark({ size = 32, closed = true }: { size?: number; closed?: boolean }) {
+  const id = useId();
   return (
     <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden="true">
       <defs>
-        <linearGradient id="lm-g" x1="0" y1="0" x2="1" y2="1">
+        <linearGradient id={id} x1="0" y1="0" x2="1" y2="1">
           <stop offset="0" stopColor="var(--violet)" />
           <stop offset="1" stopColor="var(--cyan)" />
         </linearGradient>
@@ -15,7 +18,7 @@ export function LockMark({ size = 32, closed = true }: { size?: number; closed?:
         strokeWidth="2.6"
         strokeLinecap="round"
       />
-      <circle cx="16" cy="20.5" r="8.5" fill="none" stroke="url(#lm-g)" strokeWidth="3.4" />
+      <circle cx="16" cy="20.5" r="8.5" fill="none" stroke={`url(#${id})`} strokeWidth="3.4" />
       <circle cx="16" cy="20.5" r="2.2" fill="var(--ink)" />
     </svg>
   );
