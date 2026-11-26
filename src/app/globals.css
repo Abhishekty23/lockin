@@ -143,3 +143,10 @@ body {
   html { scroll-behavior: auto; }
   .animate-breathe, .animate-flicker { animation: none; }
 }
+
+/* Leave room for the phone tab bar so it never covers the end of a page */
+@media (max-width: 767px) {
+  body:has(.mobile-tabs) {
+    padding-bottom: calc(4rem + env(safe-area-inset-bottom));
+  }
+}
