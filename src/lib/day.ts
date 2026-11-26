@@ -9,14 +9,24 @@ export type DayLog = {
   move_minutes: number;
   mood: number | null;
   note: string | null;
+  steps: number;
+  meals: Meals;
   score: number;
   locked_at: string | null;
 };
+
+export type MealKey = "breakfast" | "lunch" | "dinner" | "snacks";
+export type MealRating = "good" | "okay" | "junk";
+export type Meals = Partial<Record<MealKey, MealRating>>;
+
+/** How many of today's scheduled habits are done. */
+export type HabitProgress = { done: number; total: number };
 
 export type DayGoals = {
   water_goal: number;
   focus_goal_minutes: number;
   move_goal_minutes: number;
+  steps_goal: number;
   wake_time: string;
   sleep_time: string;
 };
@@ -29,6 +39,8 @@ export const emptyDay = (day: string): DayLog => ({
   move_minutes: 0,
   mood: null,
   note: null,
+  steps: 0,
+  meals: {},
   score: 0,
   locked_at: null,
 });
@@ -73,14 +85,23 @@ export function formatMinutes(min: number) {
 
 const clamp01 = (n: number) => Math.max(0, Math.min(1, n));
 
-export function segmentsFor(log: DayLog, goals: DayGoals): RingSegment[] {
-  return [
+export function segmentsFor(log: DayLog, goals: DayGoals, habits?: HabitProgress): RingSegment[] {
+  const segments: RingSegment[] = [
     { key: "focus", label: "Focus", color: "var(--violet)", value: clamp01(log.focus_minutes / goals.focus_goal_minutes) },
     { key: "water", label: "Water", color: "var(--water)", value: clamp01(log.water / goals.water_goal) },
     { key: "sleep", label: "Sleep", color: "var(--cyan)", value: clamp01((log.sleep_minutes ?? 0) / sleepTarget(goals)) },
-    { key: "move", label: "Move", color: "var(--amber)", value: clamp01(log.move_minutes / goals.move_goal_minutes) },
+    // Moving counts as minutes or steps, whichever is further along
+    {
+      key: "move",
+      label: "Move",
+      color: "var(--amber)",
+      value: clamp01(Math.max(log.move_minutes / goals.move_goal_minutes, (log.steps ?? 0) / (goals.steps_goal || 8000))),
+    },
     { key: "journal", label: "Journal", color: "var(--rose)", value: log.note?.trim() ? 1 : 0 },
   ];
+  // Habits only join the ring on days that have habits scheduled
+  if (habits && habits.total > 0) segments.splice(4, 0, { key: "habits", label: "Habits", color: "var(--mint)", value: clamp01(habits.done / habits.total) });
+  return segments;
 }
 
 export function scoreOf(segments: RingSegment[]) {
