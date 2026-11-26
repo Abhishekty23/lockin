@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/supabase/server";
 import { addDays, dayIn, emptyDay, type DayLog } from "@/lib/day";
+import { loadHabits } from "@/lib/habits-server";
 import AppHeader from "@/components/today/AppHeader";
 import TodayDashboard from "@/components/today/TodayDashboard";
 
@@ -24,13 +25,10 @@ export default async function Page() {
 
   const today = dayIn(profile.timezone);
   const from = addDays(today, -6);
-  const { data: rows } = await supabase
-    .from("day_logs")
-    .select("*")
-    .eq("user_id", user.id)
-    .gte("day", from)
-    .lte("day", today)
-    .returns<DayLog[]>();
+  const [{ data: rows }, habits] = await Promise.all([
+    supabase.from("day_logs").select("*").eq("user_id", user.id).gte("day", from).lte("day", today).returns<DayLog[]>(),
+    loadHabits(supabase, user.id, today),
+  ]);
 
   const byDay = new Map((rows ?? []).map((r) => [r.day, r]));
   const week = Array.from({ length: 7 }, (_, i) => {
@@ -53,12 +51,15 @@ export default async function Page() {
           water_goal: profile.water_goal,
           focus_goal_minutes: profile.focus_goal_minutes,
           move_goal_minutes: profile.move_goal_minutes ?? 30,
+          steps_goal: profile.steps_goal ?? 8000,
           wake_time: profile.wake_time,
           sleep_time: profile.sleep_time,
         }}
         soundOn={profile.sound_on}
         initial={byDay.get(today) ?? emptyDay(today)}
         week={week}
+        today={today}
+        initialHabits={habits}
       />
     </div>
   );
