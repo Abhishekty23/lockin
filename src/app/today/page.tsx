@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/supabase/server";
 import { addDays, dayIn, emptyDay, type DayLog } from "@/lib/day";
 import { loadHabits } from "@/lib/habits-server";
+import type { Task } from "@/lib/plan";
 import AppHeader from "@/components/today/AppHeader";
 import { alertSetupFrom } from "@/lib/alerts";
 import TodayDashboard from "@/components/today/TodayDashboard";
@@ -26,9 +27,18 @@ export default async function Page() {
 
   const today = dayIn(profile.timezone);
   const from = addDays(today, -6);
-  const [{ data: rows }, habits] = await Promise.all([
+  const [{ data: rows }, habits, { data: tasks }] = await Promise.all([
     supabase.from("day_logs").select("*").eq("user_id", user.id).gte("day", from).lte("day", today).returns<DayLog[]>(),
     loadHabits(supabase, user.id, today),
+    supabase
+      .from("tasks")
+      .select("id, title, priority, due, estimate_minutes, goal_id, done_at, created_at")
+      .eq("user_id", user.id)
+      .lte("due", today)
+      .or(`done_at.is.null,due.eq.${today}`)
+      .order("priority")
+      .limit(12)
+      .returns<Task[]>(),
   ]);
 
   const byDay = new Map((rows ?? []).map((r) => [r.day, r]));
@@ -61,6 +71,7 @@ export default async function Page() {
         week={week}
         today={today}
         initialHabits={habits}
+        initialTasks={tasks ?? []}
       />
     </div>
   );
