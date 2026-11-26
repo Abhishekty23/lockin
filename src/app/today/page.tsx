@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/lib/supabase/server";
 import { addDays, dayIn, emptyDay, type DayLog } from "@/lib/day";
 import { loadHabits } from "@/lib/habits-server";
 import AppHeader from "@/components/today/AppHeader";
+import { alertSetupFrom } from "@/lib/alerts";
 import TodayDashboard from "@/components/today/TodayDashboard";
 
 export const metadata = { title: "Today | LockIn" };
@@ -41,7 +42,7 @@ export default async function Page() {
 
   return (
     <div className="sky min-h-screen">
-      <AppHeader name={profile.full_name ?? "You"} avatar={profile.avatar} email={user.email ?? ""} />
+      <AppHeader name={profile.full_name ?? "You"} avatar={profile.avatar} email={user.email ?? ""} alerts={alertSetupFrom(profile)} />
       <TodayDashboard
         firstName={(profile.full_name ?? "there").split(" ")[0]}
         avatar={profile.avatar}
