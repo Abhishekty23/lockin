@@ -9,12 +9,14 @@ import { BarChart, HBars, YearHeatmap, type BarPoint } from "./Charts";
 
 type Props = {
   summary: Summary;
+  basePath?: string; // where the range links point ("/demo" in the demo)
+  demo?: boolean;
   year: { weeks: { day: string; score: number | null; future: boolean }[][]; daysLogged: number };
 };
 
 const fmtH = (m: number) => (m >= 60 ? `${Math.round((m / 60) * 10) / 10}h` : `${m}m`);
 
-export default function InsightsBoard({ summary: s, year }: Props) {
+export default function InsightsBoard({ summary: s, year, basePath = "/insights", demo = false }: Props) {
   const range = s.range as Range;
   // Tick labels: every day for a week, about weekly for a month, about every two weeks for 90 days
   const every = range === 7 ? 1 : range === 30 ? 7 : 14;
@@ -38,7 +40,7 @@ export default function InsightsBoard({ summary: s, year }: Props) {
             {RANGES.map((r) => (
               <Link
                 key={r}
-                href={`/insights?days=${r}`}
+                href={`${basePath}?${demo ? "view=insights&" : ""}days=${r}`}
                 scroll={false}
                 aria-current={r === range ? "page" : undefined}
                 className={`rounded-full px-4 py-2 text-sm font-semibold transition ${r === range ? "bg-ink text-bg" : "text-muted hover:text-ink"}`}
@@ -48,10 +50,10 @@ export default function InsightsBoard({ summary: s, year }: Props) {
             ))}
           </nav>
           <a
-            href={`/insights/report?days=${range}`}
+            href={demo ? "/signup" : `/insights/report?days=${range}`}
             className="flex h-11 items-center gap-2 rounded-full bg-violet px-5 text-sm font-semibold text-white shadow-lg shadow-violet/25 transition hover:brightness-110"
           >
-            <Download size={16} /> PDF report
+            <Download size={16} /> {demo ? "Get your own report" : "PDF report"}
           </a>
         </div>
       </div>
