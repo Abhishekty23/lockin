@@ -66,6 +66,8 @@ export default function FocusRoom({
   suggestions,
   soundOn,
   timezone,
+  startLabel,
+  startMinutes,
 }: {
   initialSessions: FocusSession[];
   initialFocusMinutes: number;
@@ -73,12 +75,15 @@ export default function FocusRoom({
   suggestions: string[];
   soundOn: boolean;
   timezone: string;
+  startLabel?: string; // from a timetable block's "Lock in for this"
+  startMinutes?: number;
 }) {
   // setup
-  const [presetId, setPresetId] = useState("pomodoro");
-  const [customFocus, setCustomFocus] = useState(40);
+  const matchesPreset = PRESETS.find((p) => p.id !== "custom" && p.focus === startMinutes);
+  const [presetId, setPresetId] = useState(startMinutes ? (matchesPreset?.id ?? "custom") : "pomodoro");
+  const [customFocus, setCustomFocus] = useState(startMinutes && !matchesPreset ? startMinutes : 40);
   const [customBreak, setCustomBreak] = useState(8);
-  const [label, setLabel] = useState(suggestions[0] ?? "");
+  const [label, setLabel] = useState(startLabel ?? suggestions[0] ?? "");
   const [ambient, setAmbient] = useState<AmbientKind>("rain");
   const [volume, setVolume] = useState(0.5);
 
