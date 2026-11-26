@@ -405,7 +405,7 @@ function detail(key: string, log: DayLog, goals: DayGoals, habits?: { done: numb
     case "habits":
       return `${habits?.done ?? 0} / ${habits?.total ?? 0} done`;
     default:
-      return log.note?.trim() ? "Written" : "Not yet";
+      return log.note?.trim() || log.journaled ? "Written" : "Not yet";
   }
 }
 
