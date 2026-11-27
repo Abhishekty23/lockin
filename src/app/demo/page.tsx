@@ -30,7 +30,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ v
           <span className="rounded-full bg-amber/15 px-2.5 py-1 text-xs font-semibold text-amber">Demo</span>
           <div className="flex-1" />
           <ThemeToggle />
-          <Link href="/signup" className="cta-glow rounded-full bg-ink px-5 py-2.5 text-sm font-semibold text-bg">
+          <Link href="/signup" className="cta-glow shrink-0 whitespace-nowrap rounded-full bg-ink px-4 py-2.5 sm:px-5 text-sm font-semibold text-bg">
             Start free
           </Link>
         </div>
