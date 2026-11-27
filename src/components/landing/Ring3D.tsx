@@ -37,12 +37,15 @@ export default function Ring3D({ values, colors, locked, onFail }: Props) {
       // ---------- renderer ----------
       let renderer: InstanceType<typeof THREE.WebGLRenderer>;
       try {
-        renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
+        renderer = new THREE.WebGLRenderer({ antialias: window.devicePixelRatio < 1.5, alpha: true, powerPreference: "high-performance" });
       } catch {
         failRef.current();
         return;
       }
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
+      const small = matchMedia("(max-width: 767px)").matches;
+      // Pixel ratio starts modest and drops further if frames run slow (see the loop)
+      let dpr = Math.min(window.devicePixelRatio, small ? 1.25 : 1.5);
+      renderer.setPixelRatio(dpr);
       renderer.outputColorSpace = THREE.SRGBColorSpace;
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
       renderer.toneMappingExposure = 1.15;
@@ -109,7 +112,7 @@ export default function Ring3D({ values, colors, locked, onFail }: Props) {
       const ring = new THREE.Group();
       rig.add(ring);
 
-      type Arc = { pivot: InstanceType<typeof THREE.Group>; fill: InstanceType<typeof THREE.Mesh>; track: InstanceType<typeof THREE.Mesh>; head: InstanceType<typeof THREE.Mesh>; headGlow: InstanceType<typeof THREE.Sprite>; mat: InstanceType<typeof THREE.MeshStandardMaterial>; trackMat: InstanceType<typeof THREE.MeshBasicMaterial>; shown: number };
+      type Arc = { pivot: InstanceType<typeof THREE.Group>; fill: InstanceType<typeof THREE.Mesh>; track: InstanceType<typeof THREE.Mesh>; head: InstanceType<typeof THREE.Mesh>; headGlow: InstanceType<typeof THREE.Sprite>; mat: InstanceType<typeof THREE.MeshStandardMaterial>; fillMat: InstanceType<typeof THREE.MeshStandardMaterial>; fillU: { value: number }; trackMat: InstanceType<typeof THREE.MeshBasicMaterial>; shown: number };
       const arcs: Arc[] = colors.map((v, i) => {
         const color = css(v);
         const pivot = new THREE.Group();
@@ -121,22 +124,29 @@ export default function Ring3D({ values, colors, locked, onFail }: Props) {
         const track = new THREE.Mesh(new THREE.TorusGeometry(R, TUBE * 0.9, 12, 64, span), trackMat);
         pivot.add(track);
         const mat = new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.85, roughness: 0.28, metalness: 0.25 });
-        const fill = new THREE.Mesh(new THREE.TorusGeometry(R, TUBE, 16, 4, 0.0001), mat);
+        // The full arc is built once; the shader hides everything past the fill point
+        const fillU = { value: 0 };
+        const fillMat = mat.clone();
+        fillMat.onBeforeCompile = (sh) => {
+          sh.uniforms.uFill = fillU;
+          sh.vertexShader = "varying float vArc;\n" + sh.vertexShader.replace("#include <begin_vertex>", "#include <begin_vertex>\nvArc = uv.x;");
+          sh.fragmentShader = "uniform float uFill;\nvarying float vArc;\n" + sh.fragmentShader.replace("void main() {", "void main() {\nif (vArc > uFill) discard;");
+        };
+        const fill = new THREE.Mesh(new THREE.TorusGeometry(R, TUBE, 16, 72, span), fillMat);
         pivot.add(fill);
         const head = new THREE.Mesh(new THREE.SphereGeometry(TUBE * 1.05, 20, 16), mat);
         pivot.add(head);
         const headGlow = glow(color, 0.9, 0.8);
         pivot.add(headGlow);
-        return { pivot, fill, track, head, headGlow, mat, trackMat, shown: -1 };
+        return { pivot, fill, track, head, headGlow, mat, fillMat, fillU, trackMat, shown: -1 };
       });
 
       const setArc = (a: Arc, v: number) => {
         const p = Math.max(0, Math.min(1, v));
-        if (Math.abs(p - a.shown) < 0.004) return;
+        if (Math.abs(p - a.shown) < 0.0005) return;
         a.shown = p;
         const angle = Math.max(0.0001, span * p);
-        a.fill.geometry.dispose();
-        a.fill.geometry = new THREE.TorusGeometry(R, TUBE, 16, Math.max(4, Math.round(72 * p)), angle);
+        a.fillU.value = p;
         const x = Math.cos(angle) * R;
         const y = Math.sin(angle) * R;
         a.head.position.set(x, y, 0);
@@ -163,7 +173,7 @@ export default function Ring3D({ values, colors, locked, onFail }: Props) {
       bodyShape.quadraticCurveTo(-bw / 2, -bh / 2, -bw / 2 + br, -bh / 2);
       const bodyGeo = new THREE.ExtrudeGeometry(bodyShape, { depth: 0.55, bevelEnabled: true, bevelSize: 0.08, bevelThickness: 0.08, bevelSegments: 6, curveSegments: 16 });
       bodyGeo.center();
-      const bodyMat = new THREE.MeshPhysicalMaterial({ color: css("--violet"), metalness: 0.55, roughness: 0.22, clearcoat: 1, clearcoatRoughness: 0.12, emissive: css("--violet"), emissiveIntensity: 0.12 });
+      const bodyMat = new THREE.MeshStandardMaterial({ color: css("--violet"), metalness: 0.55, roughness: 0.2, emissive: css("--violet"), emissiveIntensity: 0.12 });
       const body = new THREE.Mesh(bodyGeo, bodyMat);
       body.position.y = -0.35;
       lock.add(body);
@@ -177,7 +187,7 @@ export default function Ring3D({ values, colors, locked, onFail }: Props) {
       slot.position.set(0, -0.46, 0.36);
       lock.add(slot);
       // shackle: an arch with two legs; it lifts and swings open until the day is full
-      const shackleMat = new THREE.MeshPhysicalMaterial({ color: 0xe6e8ff, metalness: 0.35, roughness: 0.2, clearcoat: 1, clearcoatRoughness: 0.1 });
+      const shackleMat = new THREE.MeshStandardMaterial({ color: 0xe6e8ff, metalness: 0.35, roughness: 0.18 });
       const shackle = new THREE.Group();
       const arch = new THREE.Mesh(new THREE.TorusGeometry(0.46, 0.11, 18, 48, Math.PI), shackleMat);
       arch.position.y = 0.62;
@@ -254,6 +264,8 @@ export default function Ring3D({ values, colors, locked, onFail }: Props) {
           const c = css(v);
           arcs[i].mat.color.set(c);
           arcs[i].mat.emissive.set(c);
+          arcs[i].fillMat.color.set(c);
+          arcs[i].fillMat.emissive.set(c);
           arcs[i].trackMat.color.set(c);
           (arcs[i].headGlow.material as InstanceType<typeof THREE.SpriteMaterial>).color.set(c);
         });
@@ -298,13 +310,32 @@ export default function Ring3D({ values, colors, locked, onFail }: Props) {
       let open = 1; // 1 = shackle open, 0 = shut
       let wasLocked = false;
       let raf = 0;
+      const eased = colors.map(() => 0);
+      let frames = 0;
+      let slowTime = 0;
       const loop = () => {
         raf = requestAnimationFrame(loop);
         if (!visible || document.hidden) return;
         const dt = Math.min(clock.getDelta(), 0.05);
         const t = clock.elapsedTime;
         const { locked: isLocked } = state.current;
-        const vals = state.current.values.map((v) => (Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : 0));
+        const target = state.current.values.map((v) => (Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : 0));
+        const k = Math.min(1, dt * 14);
+        target.forEach((v, i) => (eased[i] += (v - eased[i]) * k));
+        const vals = eased;
+
+        // Lower the resolution if the device can't keep up
+        frames++;
+        slowTime += dt;
+        if (frames === 45) {
+          if (slowTime / frames > 1 / 45 && dpr > 1) {
+            dpr = Math.max(1, dpr - 0.25);
+            renderer.setPixelRatio(dpr);
+            resize();
+          }
+          frames = 0;
+          slowTime = 0;
+        }
 
         vals.forEach((v, i) => setArc(arcs[i], v));
 
@@ -318,8 +349,8 @@ export default function Ring3D({ values, colors, locked, onFail }: Props) {
 
         // shackle: opens fully at 0, closes as the day fills, snaps shut at 100
         const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
-        const target = isLocked ? 0 : 1 - avg * 0.55;
-        open += (target - open) * (isLocked ? 0.25 : 0.08);
+        const shut = isLocked ? 0 : 1 - avg * 0.55;
+        open += (shut - open) * (isLocked ? 0.25 : 0.08);
         shacklePivot.position.y = 0.05 + open * 0.32;
         shacklePivot.rotation.y = open * 0.75;
         if (isLocked && !wasLocked) fireBurst();

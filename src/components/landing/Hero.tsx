@@ -56,9 +56,14 @@ export default function Hero() {
     }
     const start = performance.now();
     const dur = 4200;
+    let last = 0;
     const step = (now: number) => {
       const p = Math.min(1, Math.max(0, (now - start) / dur)); // the first frame can be stamped a moment before start
-      setT(p);
+      // ~25 updates a second is plenty for the numbers; the 3D ring eases between them itself
+      if (p >= 1 || now - last >= 40) {
+        last = now;
+        setT(p);
+      }
       if (p < 1) raf.current = requestAnimationFrame(step);
       else if (withSound.current) sounds.lock();
     };
