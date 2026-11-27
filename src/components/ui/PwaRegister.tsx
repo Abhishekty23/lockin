@@ -9,11 +9,15 @@ declare global {
   }
 }
 
-/** Registers the service worker and keeps the browser's "install app" prompt for the Install button. */
+/** Keeps the browser's "install app" prompt for the Install button, and removes the old service worker
+ *  (it slowed every page load). Installing the app only needs the manifest. */
 export default function PwaRegister() {
   useEffect(() => {
-    if ("serviceWorker" in navigator && process.env.NODE_ENV === "production") {
-      navigator.serviceWorker.register("/sw.js").catch(() => {});
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker
+        .getRegistrations()
+        .then((regs) => regs.forEach((r) => r.unregister()))
+        .catch(() => {});
     }
     const keep = (e: Event) => {
       e.preventDefault();
