@@ -100,6 +100,16 @@ export default function TodayDashboard({ firstName, avatar, greeting, dateLabel,
     return () => window.removeEventListener("lockin:water", onWater);
   }, []);
 
+  // If a save is still on its way, ask before the tab closes or reloads so the tap isn't lost
+  const saving = useRef(0);
+  useEffect(() => {
+    const onLeave = (e: BeforeUnloadEvent) => {
+      if (saving.current > 0) e.preventDefault();
+    };
+    window.addEventListener("beforeunload", onLeave);
+    return () => window.removeEventListener("beforeunload", onLeave);
+  }, []);
+
   useEffect(() => {
     if (!toast) return;
     const t = setTimeout(() => setToast(null), 3500);
@@ -112,7 +122,9 @@ export default function TodayDashboard({ firstName, avatar, greeting, dateLabel,
   async function save(patch: DayPatch) {
     setLog((l) => ({ ...l, ...patch }));
     const mine = ++seq.current;
+    saving.current++;
     const res = await safe(updateToday(patch));
+    saving.current--;
     if (!res.ok) {
       setLog(saved.current);
       setToast({ text: res.error, tone: "error" });
