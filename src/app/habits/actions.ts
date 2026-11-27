@@ -23,7 +23,9 @@ function clean(input: HabitInput): { error: string } | { value: HabitInput } {
 // Re-score today after habits change, so the ring stays right.
 const rescore = () => saveToday(() => ({}));
 
-export async function createHabit(input: HabitInput): Promise<{ ok: true; habit: Habit; log: DayLog } | Fail> {
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export async function createHabit(input: HabitInput, id?: string): Promise<{ ok: true; habit: Habit; log: DayLog } | Fail> {
   const { supabase, user } = await getCurrentUser();
   if (!user) return { ok: false, error: "You're logged out. Log in again." };
   const c = clean(input);
@@ -35,7 +37,7 @@ export async function createHabit(input: HabitInput): Promise<{ ok: true; habit:
 
   const { data, error } = await supabase
     .from("habits")
-    .insert({ user_id: user.id, ...v, position: count ?? 0 })
+    .insert({ ...(id && UUID.test(id) ? { id } : {}), user_id: user.id, ...v, position: count ?? 0 })
     .select("id, name, emoji, color, days, position, created_at")
     .single<Habit>();
   if (error || !data) return { ok: false, error: "Couldn't add the habit. Try again." };
