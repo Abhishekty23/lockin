@@ -60,27 +60,53 @@ export function useHabits({
     return allDone;
   }
 
+  // Same checks the server makes, so changes can show on screen before the save finishes
+  function check(input: HabitInput): string | HabitInput {
+    const name = input.name.trim().slice(0, 60);
+    const days = [...new Set(input.days)].filter((d) => d >= 0 && d <= 6).sort();
+    if (!name) return "Give your habit a name.";
+    if (days.length === 0) return "Pick at least one day for this habit.";
+    return { ...input, name, days, emoji: input.emoji || "✅" };
+  }
+
   async function create(input: HabitInput) {
-    const res = await safe(createHabit(input));
-    if (!res.ok) return res.error;
-    setHabits((hs) => [...hs, { ...res.habit, doneDays: [], streak: 0, best: 0 }]);
-    onLog?.(res.log);
+    const v = check(input);
+    if (typeof v === "string") return v;
+    if (habits.length >= 20) return "You can have up to 20 habits. Remove one to add another.";
+    const id = crypto.randomUUID();
+    setHabits((hs) => [...hs, { id, ...v, position: hs.length, created_at: new Date().toISOString(), doneDays: [], streak: 0, best: 0 } as HabitWithHistory]);
+    void safe(createHabit(input, id)).then((res) => {
+      if (!res.ok) {
+        setHabits((hs) => hs.filter((h) => h.id !== id));
+        onError(res.error);
+      } else onLog?.(res.log);
+    });
     return null;
   }
 
   async function update(id: string, input: HabitInput) {
-    const res = await safe(updateHabit(id, input));
-    if (!res.ok) return res.error;
-    setHabits((hs) => hs.map((h) => (h.id === id ? withStats({ ...h, ...res.habit }, h.doneDays) : h)));
-    onLog?.(res.log);
+    const v = check(input);
+    if (typeof v === "string") return v;
+    const before = habits.find((h) => h.id === id);
+    setHabits((hs) => hs.map((h) => (h.id === id ? withStats({ ...h, ...v }, h.doneDays) : h)));
+    void safe(updateHabit(id, input)).then((res) => {
+      if (!res.ok) {
+        if (before) setHabits((hs) => hs.map((h) => (h.id === id ? before : h)));
+        onError(res.error);
+      } else onLog?.(res.log);
+    });
     return null;
   }
 
   async function remove(id: string) {
-    const res = await safe(archiveHabit(id));
-    if (!res.ok) return res.error;
+    const before = habits;
     setHabits((hs) => hs.filter((h) => h.id !== id));
-    onLog?.(res.log);
+    void safe(archiveHabit(id)).then((res) => {
+      if (!res.ok) {
+        setHabits(before);
+        onError(res.error);
+      } else onLog?.(res.log);
+    });
     return null;
   }
 
