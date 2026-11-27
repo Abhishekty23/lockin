@@ -76,7 +76,7 @@ export default function AppHeader({
 
   return (
     <>
-      <header className="sticky top-0 z-30 border-b border-line bg-bg/75 backdrop-blur-xl">
+      <header className="sticky top-0 z-30 border-b border-line bg-bg/95 lg:bg-bg/80 lg:backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-6xl items-center gap-6 px-4 sm:px-6">
           <Link href="/today" aria-label="LockIn, today">
             <Logo />
@@ -173,7 +173,7 @@ export default function AppHeader({
       {/* Phones: the same pages as a tab bar at the bottom, within thumb reach */}
       <nav
         aria-label="Main"
-        className="mobile-tabs fixed inset-x-0 bottom-0 z-40 border-t border-line bg-bg/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden"
+        className="mobile-tabs fixed inset-x-0 bottom-0 z-40 border-t border-line bg-bg/[0.97] pb-[env(safe-area-inset-bottom)] lg:hidden"
       >
         <div className="mx-auto grid max-w-xl grid-cols-7">
           {NAV.filter((n) => !n.soon).map((n) => {
