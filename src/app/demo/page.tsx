@@ -22,7 +22,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ v
 
   return (
     <div className="sky min-h-screen">
-      <header className="sticky top-0 z-30 border-b border-line bg-bg/75 backdrop-blur-xl">
+      <header className="sticky top-0 z-30 border-b border-line bg-bg/95 lg:bg-bg/80 lg:backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-6xl items-center gap-3 px-4 sm:px-6">
           <Link href="/" aria-label="LockIn home">
             <Logo />
