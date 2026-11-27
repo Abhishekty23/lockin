@@ -8,6 +8,9 @@ import { BLOCK_KINDS, type Block, type BlockKind, type Goal, type Milestone, typ
 type Fail = { ok: false; error: string };
 const fail = (error: string): Fail => ({ ok: false, error });
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
+// New items can carry an id made on the device, so they show on screen before the save finishes
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const withId = (id?: string) => (id && UUID.test(id) ? { id } : {});
 const TASK_COLS = "id, title, priority, due, estimate_minutes, goal_id, done_at, created_at";
 
 async function me() {
@@ -31,12 +34,12 @@ function cleanTask(i: TaskInput) {
   };
 }
 
-export async function addTask(input: TaskInput): Promise<{ ok: true; task: Task } | Fail> {
+export async function addTask(input: TaskInput, id?: string): Promise<{ ok: true; task: Task } | Fail> {
   const m = await me();
   if (!m) return fail("You're logged out. Log in again.");
   const v = cleanTask(input);
   if (!v) return fail("Write what the task is first.");
-  const { data, error } = await m.supabase.from("tasks").insert({ user_id: m.userId, ...v }).select(TASK_COLS).single<Task>();
+  const { data, error } = await m.supabase.from("tasks").insert({ ...withId(id), user_id: m.userId, ...v }).select(TASK_COLS).single<Task>();
   if (error || !data) return fail("Couldn't add the task. Try again.");
   return { ok: true, task: data };
 }
@@ -88,14 +91,14 @@ function cleanBlock(i: BlockInput) {
 
 const BLOCK_COLS = "id, day, start_min, end_min, title, kind";
 
-export async function addBlock(input: BlockInput): Promise<{ ok: true; block: Block } | Fail> {
+export async function addBlock(input: BlockInput, id?: string): Promise<{ ok: true; block: Block } | Fail> {
   const m = await me();
   if (!m) return fail("You're logged out. Log in again.");
   const v = cleanBlock(input);
   if (typeof v === "string") return fail(v);
   const { count } = await m.supabase.from("timetable_blocks").select("id", { count: "exact", head: true }).eq("user_id", m.userId).eq("day", m.today);
   if ((count ?? 0) >= 40) return fail("That's a lot of blocks for one day. Merge a few first.");
-  const { data, error } = await m.supabase.from("timetable_blocks").insert({ user_id: m.userId, day: m.today, ...v }).select(BLOCK_COLS).single<Block>();
+  const { data, error } = await m.supabase.from("timetable_blocks").insert({ ...withId(id), user_id: m.userId, day: m.today, ...v }).select(BLOCK_COLS).single<Block>();
   if (error || !data) return fail("Couldn't add the block. Try again.");
   return { ok: true, block: data };
 }
@@ -199,7 +202,7 @@ export async function archiveGoal(id: string): Promise<{ ok: true } | Fail> {
   return error ? fail("Couldn't remove the goal. Try again.") : { ok: true };
 }
 
-export async function addMilestone(goalId: string, title: string): Promise<{ ok: true; milestone: Milestone } | Fail> {
+export async function addMilestone(goalId: string, title: string, id?: string): Promise<{ ok: true; milestone: Milestone } | Fail> {
   const m = await me();
   if (!m) return fail("You're logged out. Log in again.");
   const t = title.trim().slice(0, 100);
@@ -207,7 +210,7 @@ export async function addMilestone(goalId: string, title: string): Promise<{ ok:
   const { count } = await m.supabase.from("milestones").select("id", { count: "exact", head: true }).eq("goal_id", goalId);
   const { data, error } = await m.supabase
     .from("milestones")
-    .insert({ goal_id: goalId, user_id: m.userId, title: t, position: count ?? 0 })
+    .insert({ ...withId(id), goal_id: goalId, user_id: m.userId, title: t, position: count ?? 0 })
     .select("id, goal_id, title, done_at, position")
     .single<Milestone>();
   if (error || !data) return fail("Couldn't add the milestone. Try again.");
