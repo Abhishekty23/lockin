@@ -7,7 +7,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { CalendarClock, ChevronDown, Loader2, Plus } from "lucide-react";
 import { sounds } from "@/lib/sounds";
 import { addDays } from "@/lib/day";
-import { sortTasks, type Block, type Goal, type Task, type WeekPlan } from "@/lib/plan";
+import { BLOCK_KINDS, sortTasks, type Block, type BlockKind, type Goal, type Task, type WeekPlan } from "@/lib/plan";
 import * as A from "@/app/plan/actions";
 import { TaskEditor, TaskList } from "./Tasks";
 import Timetable from "./Timetable";
@@ -20,6 +20,17 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "goals", label: "Goals" },
   { id: "week", label: "Week" },
 ];
+
+const BLOCK_KIND_IDS = BLOCK_KINDS.map((k) => k.id);
+/** Same checks the server makes, so a new block can show at once. */
+function draftBlock(b: A.BlockInput): Omit<Block, "id" | "day"> | string {
+  const start = Math.round(Number(b.start));
+  const end = Math.round(Number(b.end));
+  const title = b.title.trim().slice(0, 60);
+  if (!title) return "Give the block a name.";
+  if (!(start >= 0 && start < 1440 && end > start && end <= 1440)) return "The end time has to be after the start time.";
+  return { start_min: start, end_min: end, title, kind: (BLOCK_KIND_IDS.includes(b.kind as BlockKind) ? b.kind : "other") as BlockKind };
+}
 
 export default function PlanBoard({
   today,
@@ -88,16 +99,35 @@ export default function PlanBoard({
   const someday = open.filter((t) => !t.due);
   const done = sorted.filter((t) => t.done_at);
 
+  // Adds and edits show on screen straight away; the save runs in the background and is undone if it fails
+  const draftTask = (i: A.TaskInput): Omit<Task, "id" | "done_at" | "created_at"> => ({
+    title: i.title.trim().slice(0, 140),
+    priority: ([1, 2, 3].includes(Number(i.priority)) ? Number(i.priority) : 2) as Task["priority"],
+    due: i.due || null,
+    estimate_minutes: i.estimate && i.estimate >= 5 && i.estimate <= 600 ? Math.round(i.estimate) : null,
+    goal_id: i.goalId || null,
+  });
   async function add(i: A.TaskInput) {
-    const res = await safe(A.addTask(i));
-    if (!res.ok) return flash(res.error, "error"), false;
-    setTasks((ts) => [...ts, res.task]);
+    if (!i.title.trim()) return false;
+    const id = crypto.randomUUID();
+    setTasks((ts) => [...ts, { id, ...draftTask(i), done_at: null, created_at: new Date().toISOString() }]);
+    void safe(A.addTask(i, id)).then((res) => {
+      if (!res.ok) {
+        setTasks((ts) => ts.filter((x) => x.id !== id));
+        flash(res.error, "error");
+      } else setTasks((ts) => ts.map((x) => (x.id === id ? res.task : x)));
+    });
     return true;
   }
   async function save(t: Task, i: A.TaskInput) {
-    const res = await safe(A.updateTask(t.id, i));
-    if (!res.ok) return flash(res.error, "error"), false;
-    setTasks((ts) => ts.map((x) => (x.id === t.id ? res.task : x)));
+    if (!i.title.trim()) return flash("The task needs a title.", "error"), false;
+    setTasks((ts) => ts.map((x) => (x.id === t.id ? { ...x, ...draftTask(i) } : x)));
+    void safe(A.updateTask(t.id, i)).then((res) => {
+      if (!res.ok) {
+        setTasks((ts) => ts.map((x) => (x.id === t.id ? t : x)));
+        flash(res.error, "error");
+      } else setTasks((ts) => ts.map((x) => (x.id === t.id ? res.task : x)));
+    });
     return true;
   }
   async function toggle(t: Task) {
@@ -201,21 +231,39 @@ export default function PlanBoard({
                   sleep={sleep}
                   timezone={timezone}
                   onAdd={async (b) => {
-                    const res = await safe(A.addBlock(b));
-                    if (!res.ok) return res.error;
-                    setBlocks((bs) => [...bs, res.block]);
+                    const v = draftBlock(b);
+                    if (typeof v === "string") return v;
+                    const id = crypto.randomUUID();
+                    setBlocks((bs) => [...bs, { id, day: today, ...v }]);
+                    void safe(A.addBlock(b, id)).then((res) => {
+                      if (!res.ok) {
+                        setBlocks((bs) => bs.filter((x) => x.id !== id));
+                        flash(res.error, "error");
+                      } else setBlocks((bs) => bs.map((x) => (x.id === id ? res.block : x)));
+                    });
                     return null;
                   }}
                   onUpdate={async (id, b) => {
-                    const res = await safe(A.updateBlock(id, b));
-                    if (!res.ok) return res.error;
-                    setBlocks((bs) => bs.map((x) => (x.id === id ? res.block : x)));
+                    const v = draftBlock(b);
+                    if (typeof v === "string") return v;
+                    const before = blocks.find((x) => x.id === id);
+                    setBlocks((bs) => bs.map((x) => (x.id === id ? { ...x, ...v } : x)));
+                    void safe(A.updateBlock(id, b)).then((res) => {
+                      if (!res.ok) {
+                        if (before) setBlocks((bs) => bs.map((x) => (x.id === id ? before : x)));
+                        flash(res.error, "error");
+                      } else setBlocks((bs) => bs.map((x) => (x.id === id ? res.block : x)));
+                    });
                     return null;
                   }}
                   onDelete={async (id) => {
-                    const res = await safe(A.deleteBlock(id));
-                    if (!res.ok) return flash(res.error, "error");
+                    const before = blocks.find((x) => x.id === id);
                     setBlocks((bs) => bs.filter((x) => x.id !== id));
+                    const res = await safe(A.deleteBlock(id));
+                    if (!res.ok) {
+                      if (before) setBlocks((bs) => [...bs, before]);
+                      flash(res.error, "error");
+                    }
                   }}
                   onCopy={async () => {
                     const res = await safe(A.copyLastTimetable());
@@ -293,9 +341,16 @@ export default function PlanBoard({
                       if (!res.ok) flash(res.error, "error");
                     }}
                     onAddMilestone={async (title) => {
-                      const res = await safe(A.addMilestone(g.id, title));
-                      if (!res.ok) return flash(res.error, "error"), false;
-                      patchGoal(g.id, (x) => ({ ...x, milestones: [...x.milestones, res.milestone] }));
+                      const t = title.trim().slice(0, 100);
+                      if (!t) return false;
+                      const id = crypto.randomUUID();
+                      patchGoal(g.id, (x) => ({ ...x, milestones: [...x.milestones, { id, goal_id: g.id, title: t, done_at: null, position: x.milestones.length }] }));
+                      void safe(A.addMilestone(g.id, t, id)).then((res) => {
+                        if (!res.ok) {
+                          patchGoal(g.id, (x) => ({ ...x, milestones: x.milestones.filter((m) => m.id !== id) }));
+                          flash(res.error, "error");
+                        }
+                      });
                       return true;
                     }}
                     onDeleteMilestone={async (id) => {
